@@ -59,7 +59,7 @@ restructure1 <- function(dataset, attr) {
 doGoogle <- function() {
   # TODO: migrate to https://www.gstatic.com/covid19/mobility/Global_Mobility_Report.csv
   # TODO: include caveats at https://www.google.com/covid19/mobility/data_documentation.html
-  google <- read.csv('../../google-mobility-reports-data/csvs/international_local_area_trends_G20_20200417.csv');
+  google <- read.csv('../input/google.csv');
   google <- google[google$Country=='CA',];
   google <- google[!google$location %in% c('Newfoundland and Labrador', 'Northwest Territories', 'Nunavut', 'Prince Edward Island', 'Yukon'),];
   locations <- google[google$category=='Workplace',]$location;
@@ -156,11 +156,7 @@ doGoogle <- function() {
 }
 
 doApple <- function() {
-  filename <- 'applemobilitytrends-2020-04-19.csv';
-  download.file(
-      paste0('https://covid19-static.cdn-apple.com/covid19-mobility-data/2006HotfixDev10/v1/en-us/', filename),
-      paste0('../input/', filename));
-  apple <- read.csv(paste0('../input/', filename));
+  apple <- read.csv('../input/apple.csv');
   regionOrder <-
     c('Canada', 'Vancouver', 'Edmonton', 'Calgary', 'Toronto', 'Ottawa', 'Montreal', 'Halifax');
   apple <- apple[apple$region %in% regionOrder,];
