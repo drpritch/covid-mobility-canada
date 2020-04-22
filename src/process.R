@@ -220,7 +220,7 @@ doApple <- function() {
   applePost <- appleRestructure(apple, 'post');
   
   ggplot(appleAll, aes(y=values, x=date)) +
-    ggtitle("Apple Mobility Index: Feb. 2 - Apr. 20") +
+    ggtitle("Apple Mobility Index: Feb. 2 - Apr. 21") +
     geom_line(aes(color=daytype)) +
     facet_grid(rows=vars(category), cols=vars(region), scales = 'free_y', switch='y') +
     theme_light() +
@@ -235,10 +235,10 @@ doApple <- function() {
          dpi='print'
   );
   ggplot(applePost, aes(y=values, x=date)) +
-    ggtitle("Apple Mobility Index: Mar. 22 - Apr. 20") +
+    ggtitle("Apple Mobility Index: Mar. 22 - Apr. 21") +
     geom_line(aes(color=daytype)) +
     facet_grid(rows=vars(category), cols=vars(region), scales='free_y', switch='y') +
-    coord_cartesian(xlim=c(as.Date("2020/03/22"), as.Date("2020/04/19"))) +
+    coord_cartesian(xlim=c(as.Date("2020/03/22"), as.Date("2020/04/21"))) +
     scale_color_brewer(palette="Set1") +
     geom_hline(yintercept = 0, alpha=0.5) +
     theme_light() +

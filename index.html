@@ -10,13 +10,14 @@ A project by <a href="http://davidpritchard.org">David Pritchard</a> / <a
 href="https://twitter.com/drpritch2">@drpritch2</a>. Source code at <a
 href="https://github.com/drpritch/covid-mobility-canada">GitHub</a>.
 
-<p>Policy: Social Distancing</p>
+<p>Intervention: Social Distancing. Proxy Metric: Mobility</p>
 <ul>
 <li><a href="#apple">Apple Mobility Trends</a></li>
 <li><a href="#google">Google Community Mobility Reports</a></li>
+<li><a href="#citymapper">CityMapper Mobility Index</a></li>
 <li><a href="#environics">Environics Analytics</a></li>
 </ul>
-<p>Outcome: COVID cases</p>
+<p>Outcome: COVID case counts</p>
 <ul>
 <li><a href="#syndromic">Syndromic Surveillance</a></li>
 </ul>
@@ -25,8 +26,12 @@ href="https://github.com/drpritch/covid-mobility-canada">GitHub</a>.
   <ul>
     <li>Quick updates, data available within 24 hours</li>
     <li>Metropolitan areas, but no provincial data available</li>
-    <li>Intention to travel (using maps app), not measure of actual travel</li>
+    <li>Intention to travel (using maps app), not measure of actual travel. Also likely biased
+        towards "unusual" trips that require directions</li>
     <li>Categorized by mode, excluding bike and taxi</li>
+    <li>Use some caution - shifts between modes can create analysis errors.
+      A wholesale shift from driving to walking could appear as a "spike" in
+      walk mode, but no actual increase in total travel activity</li>
     <li><a href="https://www.apple.com/covid19/mobility">website</a> |
         <a href="https://www.apple.com/covid19/mobility">about data</a>
   </ul>
@@ -42,12 +47,15 @@ reported 11 days late, Saturday data reported 5 days late.</li>
     <li>Provincial data, but no municipal data available. Varying rural/urban
 composition makes province-to-province comparisons difficult.</li>
     <li>Actual travel, measured at the destination location.</li>
-    <li>Categorized by destination type/trip purpose.</li>
+    <li>Categorized by destination type/trip purpose. Pretty solid basis for analysis.</li>
     <li><a href="https://www.google.com/covid19/mobility/">website</a> |
         <a href="https://www.blog.google/technology/health/covid-19-community-mobility-reports">about data</a>
   </ul>
   <a href="output/google_all.png"><img src="output/google_all.png" width="600px" /></a><br/>
   <a href="output/google_post.png"><img src="output/google_post.png" width="400px"/></a>
+
+<a name="citymapper"><h2>CityMapper Mobility Index</h2></a>
+
 
 <a name="environics"><h2>Environics Analytics</h2></a>
   <ul>
