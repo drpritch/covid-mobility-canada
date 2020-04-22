@@ -135,6 +135,7 @@ doGoogle <- function() {
     width=6.5, height=6, units='in', scale=1.5,
     dpi='print'
   );
+  #TODO: add point data too!
   
   ggplot(post, aes(y=values, x=date)) +
     ggtitle("Google Community Mobility Index: Mar. 22 - Apr. 11") +
@@ -150,7 +151,7 @@ doGoogle <- function() {
   # Deliberately narrower, to exaggerate slopes.
   ggsave(filename = '../output/google_post.png',
          device = 'png',
-         width=3.5, height=6, units='in', scale=1.6,
+         width=3.5, height=6, units='in', scale=2.0,
          dpi='print'
   );
 }
@@ -219,7 +220,7 @@ doApple <- function() {
   applePost <- appleRestructure(apple, 'post');
   
   ggplot(appleAll, aes(y=values, x=date)) +
-    ggtitle("Apple Mobility Index: Feb. 2 - Apr. 19") +
+    ggtitle("Apple Mobility Index: Feb. 2 - Apr. 20") +
     geom_line(aes(color=daytype)) +
     facet_grid(rows=vars(category), cols=vars(region), scales = 'free_y', switch='y') +
     theme_light() +
@@ -234,7 +235,7 @@ doApple <- function() {
          dpi='print'
   );
   ggplot(applePost, aes(y=values, x=date)) +
-    ggtitle("Apple Mobility Index: Mar. 22 - Apr. 19") +
+    ggtitle("Apple Mobility Index: Mar. 22 - Apr. 20") +
     geom_line(aes(color=daytype)) +
     facet_grid(rows=vars(category), cols=vars(region), scales='free_y', switch='y') +
     coord_cartesian(xlim=c(as.Date("2020/03/22"), as.Date("2020/04/19"))) +
@@ -246,7 +247,7 @@ doApple <- function() {
     theme(axis.text.x = element_text(angle = 90))
   ggsave(filename = '../output/apple_post.png',
          device = 'png',
-         width=3, height=4, units='in', scale=1.6,
+         width=3, height=4, units='in', scale=1.8,
          dpi='print'
   );
 }

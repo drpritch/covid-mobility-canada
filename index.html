@@ -1,0 +1,90 @@
+<html>
+<head>
+<style>
+</style>
+</head>
+<body>
+<h1>Social Distancing Mobility Tracking for Canada</h1>
+
+A project by <a href="http://davidpritchard.org">David Pritchard</a> / <a
+href="https://twitter.com/drpritch2">@drpritch2</a>. Source code at <a
+href="https://github.com/drpritch/covid-mobility-canada">GitHub</a>.
+
+<p>Policy: Social Distancing</p>
+<ul>
+<li><a href="#apple">Apple Mobility Trends</a></li>
+<li><a href="#google">Google Community Mobility Reports</a></li>
+<li><a href="#environics">Environics Analytics</a></li>
+</ul>
+<p>Outcome: COVID cases</p>
+<ul>
+<li><a href="#syndromic">Syndromic Surveillance</a></li>
+</ul>
+
+<a name="apple"><h2>Apple Mobility Trends</h2></a>
+  <ul>
+    <li>Quick updates, data available within 24 hours</li>
+    <li>Metropolitan areas, but no provincial data available</li>
+    <li>Intention to travel (using maps app), not measure of actual travel</li>
+    <li>Categorized by mode, excluding bike and taxi</li>
+    <li><a href="https://www.apple.com/covid19/mobility">website</a> |
+        <a href="https://www.apple.com/covid19/mobility">about data</a>
+  </ul>
+
+  <a href="output/apple_all.png"><img src="output/apple_all.png" width="600px" /><a/><br/>
+  <a href="output/apple_post.png"><img src="output/apple_post.png" width="400px" /></a>
+
+<a name="google"><h2>Google Community Mobility Report</h2></a>
+  <ul>
+    <li>Regular but lagged updates. Data released on Thursdays covering
+preceding Sunday-to-Saturday activity. Sunday activity is therefore
+reported 11 days late, Saturday data reported 5 days late.</li>
+    <li>Provincial data, but no municipal data available. Varying rural/urban
+composition makes province-to-province comparisons difficult.</li>
+    <li>Actual travel, measured at the destination location.</li>
+    <li>Categorized by destination type/trip purpose.</li>
+    <li><a href="https://www.google.com/covid19/mobility/">website</a> |
+        <a href="https://www.blog.google/technology/health/covid-19-community-mobility-reports">about data</a>
+  </ul>
+  <a href="output/google_all.png"><img src="output/google_all.png" width="600px" /></a><br/>
+  <a href="output/google_post.png"><img src="output/google_post.png" width="400px"/></a>
+
+<a name="environics"><h2>Environics Analytics</h2></a>
+  <ul>
+    <li>Best geographic detail, best true estimate of "outside of home"
+behavior.</li>
+    <li>Cellphone position tracking outside of home postal code. Covers
+weekend activity, spanning Feb. 2nd to April 5th.</li>
+    <li>Further data is likely available for paying clients. Not clear what
+analysis time lag is, whether the 5 day lag for Globe and Mail is
+normal.</li>
+    <li>Covered by Globe &amp; Mail, April 10th,
+        <a href="https://www.theglobeandmail.com/canada/article-one-in-six-canadians-ventured-beyond-their-neighbourhood-last-weekend/">"Canadians
+sticking closer to home amid shutdownm analysis finds"</a>.</li>
+  <li>Covered by Toronto Star, April 12th,
+        <a href="https://www.thestar.com/news/gta/2020/04/12/which-canadians-are-best-adhering-to-covid-19-self-isolation-rules-this-environics-data-provides-a-snapshot-across-the-country-and-in-your-neighbourhood.html">"Which Canadians are best adhering to COVID-19 self-isolation rules? This
+Environics data provides a snapshot across the country and in your
+neighbourhood"</a>.</li>
+    <li>Covered by <a href="https://toronto.ctvnews.ca/video?clipId=1937913">CTV news</a></li>
+  </ul></li>
+
+<a name="traffic"><h2>Traffic Activity</h2></a>
+  <ul>
+    <li>Sometimes gives access to finer geographic detail, reported in real-time</li>
+    <li>Only provided by a few municipalities</li>
+    <li>Requires manual geoanalysis, sometimes also website scraping</li>
+    <li><a href="https://data.calgary.ca/Transportation-Transit/Traffic-Incidents/35ra-9556">City of Calgary traffic incidents</a></li>
+    <li><a href="https://twitter.com/OPP_GTATraffic">Ontario Provincial Police GTA Traffic twitter feed</a></li>
+  </ul>
+
+<a name="syndromic"><h1>Syndromic Surveillance</h1></a>
+  <ul>
+    <li>Most "leading" indicator of COVID cases, prior to test
+submissions or results</li>
+    <li><a href="https://covidnearyou.org">covidnearyou.org</a></li>
+    <li><a href="https://flatten.ca">flatten.ca</a></li>
+    <li><a href="https://www.kflaphi.ca/aces-pandemic-tracker/">ACES Pandemic Tracker</a>:
+Ontario hospital admissions combined with symptom keywords</li>
+  </ul>
+</body>
+</html>
