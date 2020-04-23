@@ -56,90 +56,74 @@ restructure1 <- function(dataset, attr) {
   })
 }
 
-doGoogle <- function() {
-  # TODO: migrate to https://www.gstatic.com/covid19/mobility/Global_Mobility_Report.csv
-  # TODO: include caveats at https://www.google.com/covid19/mobility/data_documentation.html
-  google <- read.csv('../input/google.csv');
-  google <- google[google$Country=='CA',];
-  google <- google[!google$location %in% c('Newfoundland and Labrador', 'Northwest Territories', 'Nunavut', 'Prince Edward Island', 'Yukon'),];
-  locations <- google[google$category=='Workplace',]$location;
-  google <- list(
-    work = t(google[google$category=='Workplace',4:ncol(google)]),
-    transit = t(google[google$category=='Transit stations',4:ncol(google)]),
-    rec = t(google[google$category=='Retail & recreation',4:ncol(google)]),
-    grocery = t(google[google$category=='Grocery & pharmacy',4:ncol(google)]),
-    res = t(google[google$category=='Residential',4:ncol(google)]),
-    park = t(google[google$category=='Parks',4:ncol(google)])
-  )
-  google <- lapply(google, function(cat) {
-    colnames(cat) <- locations;
-    cat <- xts(cat, order.by=as.Date('2020/02/29') + 0:(nrow(cat)-1));
-    isweekday <- .indexwday(cat)%in% 1:5;
-    isweekday[index(cat) == as.Date('2020/04/10')] <- FALSE;   # Good Friday
-    cat <- list(weekdays = cat[isweekday,],
-                weekends = cat[!isweekday,]);
-    cat <- aggregateAndExtract(cat);
-  });
-
-  googleRestructure <- function(google, attr) {
-    result <- restructure1(google, attr);
-    result$work$category <- 'Workplace';
-    result$transit$category <- 'Transit Stations';
-    result$rec$category <- 'Retail & Recreation';
-    result$park$category <- 'Park';
-    result$grocery$category <- 'Grocery & Pharmacy';
-    result$res$category <- 'Residential';
-    result <- rbind(result$work, result$transit, result$rec, result$grocery, result$res, result$park);
-    result$region <- factor(result$region);
-    result$daytype <- factor(result$daytype);
-    result$category <- factor(result$category);
-  #  result$date <- factor(result$date);
-    result$date <- as.Date(result$date);
-    
-    provinceOrder <-
-      c('British Columbia', 'Alberta', 'Saskatchewan', 'Manitoba',
-        'Ontario', 'Quebec',
-    #    'Prince Edward Island',
-        'New Brunswick', 'Nova Scotia'#, 'Newfoundland and Labrador',
-    #    'Yukon', 'Northwest Territories', 'Nunavut'
-      );
-    categoryOrder <- c('Workplace','Transit Stations','Grocery & Pharmacy','Retail & Recreation','Residential','Park');
-    result$region <- fct_relevel(result$region, provinceOrder);
-    result$category <- fct_relevel(result$category, categoryOrder);
-    result$category_daytype <- with(result, interaction(result$daytype, result$category));
-    result$region_date <- with(result, interaction(result$date, result$region));
-#    result$province_major <- factor(result$province %in% c('British Columbia', 'Alberta', 'Ontario', 'Quebec'),
-#                                    levels=c(TRUE,FALSE), labels=c('big','small'));
-#    result$province_west <- factor(result$province %in% c('British Columbia', 'Alberta', 'Saskatchewan', 'Manitoba'),
-#                                   levels=c(TRUE,FALSE), labels=c('west','east'));
+doGoogle <- function()
+{
+  # Actually: blank field = NA.
+  google <- read.csv('../input/google.csv', na.strings='ZZZZZZ');
+  colnames(google)[1:4] <- c('country_code', 'country', 'region', 'subregion');
+  google <- google[google$country_code=='CA',];
+  # TODO: deal with provinces with NA data.
+  google <- google[!google$region %in% c('Northwest Territories', 'Nunavut', 'Prince Edward Island', 'Yukon'),];
+  colnames(google)[6:11] <- c('Retail & Recreation', 'Grocery & Pharmacy', 'Park', 'Transit Stations', 'Workplace', 'Residential');
+  provinceOrder <-
+    c('','British Columbia', 'Alberta', 'Saskatchewan', 'Manitoba',
+      'Ontario', 'Quebec',
+      #    'Prince Edward Island',
+      'New Brunswick', 'Nova Scotia', 'Newfoundland and Labrador'
+      #    'Yukon', 'Northwest Territories', 'Nunavut'
+    );
+  google$region <- fct_relevel(google$region, provinceOrder);
+  levels(google$region)[1] = 'Canada';
+  google$date <- as.Date(google$date);
+  google$daytype <- weekdays(google$date) %in% c('Saturday','Sunday');
+  google$daytype <- factor(google$daytype, levels = c(TRUE, FALSE), labels = c('Weekend/Holiday', 'Weekday'));
+  google$daytype[google$date == as.Date('2020/04/10')] <- 'Weekend/Holiday';   # Good Friday
+  google$daytype <- factor(google$daytype);
+  google <- do.call('rbind', lapply(6:11, function(col) {
+    result <- google[,c(1:5,12:ncol(google))];
+    result$category <- colnames(google)[col];
+    result$value <- google[,col];
     result
-  }
-  deltas <- googleRestructure(google, 'deltas');
-  mins <- googleRestructure(google, 'minimum');
-  all <- googleRestructure(google, 'all');
-  post <- googleRestructure(google, 'post');
-  #print(round(xtabs(formula = values ~ region_date + category_daytype, all), 1))
-  #print(round(xtabs(formula = values ~ region_date + category_daytype, post), 1))
-  ggplot(all, aes(y=values, x=date)) +
+  }));
+  google$value[google$value=='NA'] <- NA;
+  categoryOrder <- c('Workplace','Transit Stations','Grocery & Pharmacy','Retail & Recreation','Residential','Park');
+  google$category <- fct_relevel(google$category, categoryOrder);
+  
+  #google$category_daytype <- with(google, interaction(google$daytype, google$category));
+  #google$region_date <- with(google, interaction(google$date, google$region));
+
+  #print(round(xtabs(formula = value ~ region_date + category_daytype, google), 1))
+  google <- droplevels(google);
+  google$value7 <- NA;
+  # TODO: must be some way to do this with a group by.
+  for(daytype in levels(google$daytype))
+    for(category in levels(google$category))
+        for(region in levels(google$region)) {
+          filter <- google$daytype == daytype & google$category == category & google$region == region;
+          google[filter,]$value7 <- rollmean(google[filter,]$value, ifelse(daytype=='Weekday',5,2), fill=NA);
+        }
+  ggplot(google,
+         aes(y=value7, x=date)) +
     ggtitle("Google Community Mobility Index: Mar. 1 - Apr. 11") +
-    geom_line(aes(color=daytype)) +
+    geom_line(aes(y=value7, color=daytype)) +
     facet_grid(rows=vars(category), cols=vars(region), scales = 'free_y', switch='y') +
     theme_light() +
     scale_color_brewer(palette="Set1") +
     geom_hline(yintercept = 0, alpha=0.5) +
     theme(legend.position="bottom") +
     labs(y="Mobility Index", x="", color = "Day type", caption="Aggregated to Wed/Sat dates. Analysis by @drpritch2.") +
-    theme(axis.text.x = element_text(angle = 90)) +
+    theme(axis.text.x = element_text(angle = 90));
   ggsave(filename = '../output/google_all.png',
     device = 'png',
-    width=6.5, height=6, units='in', scale=1.5,
+    width=6.5, height=5.5, units='in', scale=1.5,
     dpi='print'
   );
-  #TODO: add point data too!
-  
-  ggplot(post, aes(y=values, x=date)) +
+
+  ggplot(google[google$date>=as.Date("2020-03-23") - 7,],
+         aes(y=value, x=date)) +
     ggtitle("Google Community Mobility Index: Mar. 22 - Apr. 11") +
-    geom_line(aes(color=daytype)) +
+    geom_point(aes(color=daytype), size=1, alpha=0.2) +
+    geom_line(aes(y=value7, color=daytype)) +
     facet_grid(rows=vars(category), cols=vars(region), scales='free_y', switch='y') +
     coord_cartesian(xlim=c(as.Date("2020/03/22"), as.Date("2020/04/10"))) +
     scale_color_brewer(palette="Set1") +
@@ -147,11 +131,11 @@ doGoogle <- function() {
     theme_light() +
     theme(legend.position="bottom") +
     labs(y="Mobility Index", x="", color = "Day type", caption="Aggregated to Wed/Sat dates. Analysis by @drpritch2.") +
-    theme(axis.text.x = element_text(angle = 90))
+    theme(axis.text.x = element_text(angle = 90));
   # Deliberately narrower, to exaggerate slopes.
   ggsave(filename = '../output/google_post.png',
          device = 'png',
-         width=3.5, height=6, units='in', scale=2.0,
+         width=3.5, height=5.5, units='in', scale=2.0,
          dpi='print'
   );
 }
