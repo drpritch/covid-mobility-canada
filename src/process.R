@@ -64,7 +64,7 @@ doGoogle <- function()
   google <- google[google$country_code=='CA',];
   # TODO: deal with provinces with NA data.
   google <- google[!google$region %in% c('Northwest Territories', 'Nunavut', 'Prince Edward Island', 'Yukon'),];
-  colnames(google)[6:11] <- c('Retail & Recreation', 'Grocery & Pharmacy', 'Park', 'Transit Stations', 'Workplace', 'Residential');
+  colnames(google)[6:11] <- c('retail', 'grocery', 'park', 'transit', 'work', 'res');
   provinceOrder <-
     c('','British Columbia', 'Alberta', 'Saskatchewan', 'Manitoba',
       'Ontario', 'Quebec',
@@ -76,9 +76,10 @@ doGoogle <- function()
   levels(google$region)[1] = 'Canada';
   google$date <- as.Date(google$date);
   google$daytype <- weekdays(google$date) %in% c('Saturday','Sunday');
-  google$daytype <- factor(google$daytype, levels = c(TRUE, FALSE), labels = c('Weekend/Holiday', 'Weekday'));
+  google$daytype <- factor(google$daytype, levels = c(FALSE, TRUE), labels = c('Weekday','Weekend/Holiday'));
   google$daytype[google$date == as.Date('2020/04/10')] <- 'Weekend/Holiday';   # Good Friday
   google$daytype <- factor(google$daytype);
+  # Change from all categories on one row, to one row per category.
   google <- do.call('rbind', lapply(6:11, function(col) {
     result <- google[,c(1:5,12:ncol(google))];
     result$category <- colnames(google)[col];
@@ -86,32 +87,42 @@ doGoogle <- function()
     result
   }));
   google$value[google$value=='NA'] <- NA;
-  categoryOrder <- c('Workplace','Transit Stations','Grocery & Pharmacy','Retail & Recreation','Residential','Park');
+  categoryOrder <- c('work', 'transit', 'grocery', 'retail', 'res', 'park');
   google$category <- fct_relevel(google$category, categoryOrder);
+  
+  google <- droplevels(google);
+  region.labs = c('Canada', 'Brit Columbia', 'Alberta', 'Saskatchewan', 'Manitoba', 'Ontario', 'Quebec', 'New Brunsw', 'Nova Scotia', 'Newfoundland');
+  names(region.labs) = levels(google$region);
+  region.labs2 = c('Canada', 'Brit Colum', 'Alberta', 'Saskatch', 'Manitoba', 'Ontario', 'Quebec', 'New Bruns', 'Nova Scot', 'Newfound');
+  names(region.labs2) = levels(google$region);
+  category.labs = c('Workplace', 'Transit Stations', 'Grocery & Phar', 'Retail & Recreat', 'Residential', 'Park');
+  names(category.labs) = levels(google$category);
+  category.labs2 = c('Workplace', 'Transit Stations', 'Grocery & Pharmacy', 'Retail & Recreation', 'Residential', 'Park');
+  names(category.labs2) = levels(google$category);
   
   #google$category_daytype <- with(google, interaction(google$daytype, google$category));
   #google$region_date <- with(google, interaction(google$date, google$region));
 
-  #print(round(xtabs(formula = value ~ region_date + category_daytype, google), 1))
-  google <- droplevels(google);
+  #print(xtabs(formula = value ~ region_date + category_daytype, google)))
   google$value7 <- NA;
   # TODO: must be some way to do this with a group by.
   for(daytype in levels(google$daytype))
     for(category in levels(google$category))
         for(region in levels(google$region)) {
           filter <- google$daytype == daytype & google$category == category & google$region == region;
-          google[filter,]$value7 <- rollmean(google[filter,]$value, ifelse(daytype=='Weekday',5,2), fill=NA);
+          google[filter,]$value7 <- rollmean(google[filter,]$value, ifelse(daytype=='Weekday',5,2), fill=NA, align='right');
         }
-  ggplot(google,
-         aes(y=value7, x=date)) +
-    ggtitle("Google Community Mobility Index: Mar. 1 - Apr. 11") +
+  ggplot(google, aes(y=value7, x=date)) +
+    ggtitle(paste0("Mobility in Canada During Covid (as of ", format.Date(max(google$date), "%b %d"), ")")) +
     geom_line(aes(y=value7, color=daytype)) +
-    facet_grid(rows=vars(category), cols=vars(region), scales = 'free_y', switch='y') +
+    facet_grid(rows=vars(category), cols=vars(region), scales = 'free_y', switch='y',
+               labeller = labeller(region = region.labs, category=category.labs)) +
+    coord_cartesian(xlim=c(as.Date("2020/03/01"), Sys.Date() - 1)) +
     theme_light() +
     scale_color_brewer(palette="Set1") +
     geom_hline(yintercept = 0, alpha=0.5) +
     theme(legend.position="bottom") +
-    labs(y="Mobility Index", x="", color = "Day type", caption="Aggregated to Wed/Sat dates. Analysis by @drpritch2.") +
+    labs(y="Google Community Mobility Index", x="", color = "Day type", caption="Rolling 7 day average. drpritch.github.io/covid-mobility-canada") +
     theme(axis.text.x = element_text(angle = 90));
   ggsave(filename = '../output/google_all.png',
     device = 'png',
@@ -121,21 +132,22 @@ doGoogle <- function()
 
   ggplot(google[google$date>=as.Date("2020-03-23") - 7,],
          aes(y=value, x=date)) +
-    ggtitle("Google Community Mobility Index: Mar. 22 - Apr. 11") +
+    ggtitle(paste0("Mobility in Canada After Lockdown Low (as of ", format.Date(max(google$date), "%b %d"), ")")) +
     geom_point(aes(color=daytype), size=1, alpha=0.2) +
     geom_line(aes(y=value7, color=daytype)) +
-    facet_grid(rows=vars(category), cols=vars(region), scales='free_y', switch='y') +
-    coord_cartesian(xlim=c(as.Date("2020/03/22"), as.Date("2020/04/10"))) +
+    facet_grid(rows=vars(category), cols=vars(region), scales='free_y', switch='y',
+      labeller = labeller(region = region.labs2, category=category.labs2)) +
+    coord_cartesian(xlim=c(as.Date("2020/03/22"), Sys.Date() - 1)) +
     scale_color_brewer(palette="Set1") +
     geom_hline(yintercept = 0, alpha=0.5) +
     theme_light() +
     theme(legend.position="bottom") +
-    labs(y="Mobility Index", x="", color = "Day type", caption="Aggregated to Wed/Sat dates. Analysis by @drpritch2.") +
+    labs(y="Google Community Mobility Index", x="", color = "Day type", caption="Rolling 7 day average. drpritch.github.io/covid-mobility-canada") +
     theme(axis.text.x = element_text(angle = 90));
   # Deliberately narrower, to exaggerate slopes.
   ggsave(filename = '../output/google_post.png',
          device = 'png',
-         width=3.5, height=5.5, units='in', scale=2.0,
+         width=4, height=5.5, units='in', scale=2.0,
          dpi='print'
   );
 }
@@ -204,7 +216,7 @@ doApple <- function() {
   applePost <- appleRestructure(apple, 'post');
   
   ggplot(appleAll, aes(y=values, x=date)) +
-    ggtitle("Apple Mobility Index: Feb. 2 - Apr. 21") +
+    ggtitle("Apple Mobility Index: Feb. 2 - Apr. 22") +
     geom_line(aes(color=daytype)) +
     facet_grid(rows=vars(category), cols=vars(region), scales = 'free_y', switch='y') +
     theme_light() +
@@ -219,10 +231,10 @@ doApple <- function() {
          dpi='print'
   );
   ggplot(applePost, aes(y=values, x=date)) +
-    ggtitle("Apple Mobility Index: Mar. 22 - Apr. 21") +
+    ggtitle("Apple Mobility Index: Mar. 22 - Apr. 22") +
     geom_line(aes(color=daytype)) +
     facet_grid(rows=vars(category), cols=vars(region), scales='free_y', switch='y') +
-    coord_cartesian(xlim=c(as.Date("2020/03/22"), as.Date("2020/04/21"))) +
+    coord_cartesian(xlim=c(as.Date("2020/03/22"), Sys.Date() - 1)) +
     scale_color_brewer(palette="Set1") +
     geom_hline(yintercept = 0, alpha=0.5) +
     theme_light() +
