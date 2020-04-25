@@ -158,17 +158,21 @@ for (region in levels(apple$region)) {
 
 apple$value7 <- getRolling(apple);
 
+region.labs2 <- levels(apple$region);
+region.labs2[2:3] <- c('Vancouv', 'Edmont');
+names(region.labs2) <- levels(apple$region);
+
 ggplot(apple, aes(y=value7, x=date)) +
   ggtitle(paste0("Mobility in Canada During Covid (as of ", format.Date(max(apple$date), "%b %d"), ")")) +
   geom_line(aes(y=value7, color=daytype)) +
   facet_grid(rows=vars(category), cols=vars(region), scales = 'free_y', switch='y') +
 #               labeller = labeller(region = region.labs, category=category.labs)) +
-  coord_cartesian(xlim=c(as.Date("2020/01/01"), Sys.Date() - 1)) +
+  coord_cartesian(xlim=c(as.Date("2020/02/01"), Sys.Date() - 1)) +
   theme_light() +
   scale_color_brewer(palette="Set1") +
   geom_hline(yintercept = 0, alpha=0.5) +
   theme(legend.position="bottom") +
-  labs(y="Apple Mobility Index", x="", color = "Day type", caption="Rolling 7 day average. drpritch.github.io/covid-mobility-canada") +
+  labs(y="Apple Mobility Index", x="", color = "Day type", caption="Rebaselined similar to Google Mobility Index. Rolling 7 day average. drpritch.github.io/covid-mobility-canada") +
   theme(axis.text.x = element_text(angle = 90));
 ggsave(filename = '../output/apple_all.png',
        device = 'png',
@@ -180,14 +184,14 @@ ggplot(apple[apple$date>=as.Date("2020-03-23") - 7,],
   ggtitle(paste0("Mobility in Canada After Lockdown Low (as of ", format.Date(max(apple$date), "%b %d"), ")")) +
   geom_point(aes(color=daytype), size=1, alpha=0.2) +
   geom_line(aes(y=value7, color=daytype)) +
-  facet_grid(rows=vars(category), cols=vars(region), scales='free_y', switch='y') +
-#               labeller = labeller(region = region.labs2, category=category.labs2)) +
+  facet_grid(rows=vars(category), cols=vars(region), scales='free_y', switch='y',
+               labeller = labeller(region = region.labs2)) +
   coord_cartesian(xlim=c(as.Date("2020/03/22"), Sys.Date() - 1)) +
   scale_color_brewer(palette="Set1") +
   geom_hline(yintercept = 0, alpha=0.5) +
   theme_light() +
   theme(legend.position="bottom") +
-  labs(y="Apple Mobility Index", x="", color = "Day type", caption="Rolling 7 day average. drpritch.github.io/covid-mobility-canada") +
+  labs(y="Apple Mobility Index", x="", color = "Day type", caption="Rebaselined similar to Google Mobility Index. Rolling 7 day average. drpritch.github.io/covid-mobility-canada") +
   theme(axis.text.x = element_text(angle = 90));  ggsave(filename = '../output/apple_post.png',
        device = 'png',
        width=3, height=4, units='in', scale=1.8,
