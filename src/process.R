@@ -170,7 +170,7 @@ ggplot(apple, aes(y=value7, x=date)) +
   coord_cartesian(xlim=c(as.Date("2020/02/01"), Sys.Date() - 1)) +
   theme_light() +
   scale_color_brewer(palette="Set1") +
-  geom_hline(yintercept = 0, alpha=0.5) +
+  geom_hline(yintercept = 0,alpha=0.5) +
   theme(legend.position="bottom") +
   labs(y="Apple Mobility Index", x="", color = "Day type", caption="Rebaselined similar to Google Mobility Index. Rolling 7 day average. drpritch.github.io/covid-mobility-canada") +
   theme(axis.text.x = element_text(angle = 90));
