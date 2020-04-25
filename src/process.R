@@ -1,6 +1,5 @@
 library('ggplot2');
 library('forcats');
-library('matrixStats'); # for colMedians
 library('tidyr');
 
 
@@ -122,7 +121,41 @@ apple <- apple[apple$region%in% regionOrder,];
 apple$region <- fct_relevel(apple$region, regionOrder);
 apple$daytype <- getDaytype(apple$date);
 colnames(apple)[3] <- 'category'; # mode, really
+
 apple <- droplevels(apple);
+weekdayList <- c('Sun','Mon','Tue','Wed','Thu','Fri','Sat');
+for (region in levels(apple$region)) {
+  regionFilter <- apple$region == region;
+  baselineDayOfWeek <- lapply(levels(apple$category), function(mode) {
+    modeFilter <- regionFilter & apple$category == mode;
+    baselineFilter <- modeFilter & apple$date < as.Date('2020/02/10');
+    numerator <- apple$value[baselineFilter][1]; # always 100
+    baselineDayOfWeek_mode <- lapply(weekdayList, function(day) {
+      weekdayFilter <- weekdays(apple$date, abbreviate=TRUE) == day;
+      # Factor to change baseline from row 1 (as shipped by Apple) to average of
+      # equivalent weekday in period.
+      numerator / median(apple$value[baselineFilter & weekdayFilter])
+    });
+    names(baselineDayOfWeek_mode) <- weekdayList;
+    # Weekend-to-weekday ratio. About +15% for drive, +20% for transit, +10% for walk
+    # Makes sense, for a trip planner app.
+    #print(mean(unlist(baselineDayOfWeek_mode[c(1,7)]))/mean(unlist(baselineDayOfWeek_mode[2:6])));
+    baselineDayOfWeek_mode
+  });
+  
+  baselineDayOfWeek <- as.data.frame(do.call(rbind, baselineDayOfWeek));
+  rownames(baselineDayOfWeek) <- levels(apple$category);
+  print(region)
+  print(baselineDayOfWeek);
+  
+  for (mode in levels(apple$category)) {
+    modeFilter <- regionFilter & apple$category == mode;
+    baselineDayOfWeek_mode <- baselineDayOfWeek[rownames(baselineDayOfWeek) == mode,];
+    apple$value[modeFilter] <- apple$value[modeFilter] *
+      unlist(baselineDayOfWeek_mode[weekdays(apple$date[modeFilter], abbreviate=T)]) - 100;
+  }
+}
+
 apple$value7 <- getRolling(apple);
 
 ggplot(apple, aes(y=value7, x=date)) +
@@ -130,20 +163,16 @@ ggplot(apple, aes(y=value7, x=date)) +
   geom_line(aes(y=value7, color=daytype)) +
   facet_grid(rows=vars(category), cols=vars(region), scales = 'free_y', switch='y') +
 #               labeller = labeller(region = region.labs, category=category.labs)) +
-  coord_cartesian(xlim=c(as.Date("2020/02/01"), Sys.Date() - 1)) +
+  coord_cartesian(xlim=c(as.Date("2020/01/01"), Sys.Date() - 1)) +
   theme_light() +
   scale_color_brewer(palette="Set1") +
   geom_hline(yintercept = 0, alpha=0.5) +
   theme(legend.position="bottom") +
   labs(y="Apple Mobility Index", x="", color = "Day type", caption="Rolling 7 day average. drpritch.github.io/covid-mobility-canada") +
-  theme(axis.text.x = element_text(angle = 90));  ggsave(filename = '../output/apple_all.png',
-       device = 'png',
-       width=6.5, height=4, units='in', scale=1.5,
-       dpi='print'
-);
+  theme(axis.text.x = element_text(angle = 90));
 ggsave(filename = '../output/apple_all.png',
        device = 'png',
-       width=3, height=4, units='in', scale=1.8,
+       width=6.5, height=4, units='in', scale=1.5,
        dpi='print'
 );
 ggplot(apple[apple$date>=as.Date("2020-03-23") - 7,],
