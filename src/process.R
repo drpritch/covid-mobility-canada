@@ -140,7 +140,7 @@ for (region in levels(apple$region)) {
 ########################################################################################
 # Plotting
 
-setupPlot <- function(p, startDate = '2020/03/01', isGoogle = TRUE, isDouble=FALSE) {
+setupPlot <- function(p, startDate = '2020/03/01', isGoogle = TRUE, isDouble=FALSE, dateSpacing = '1 week') {
   isApple <- !isGoogle;
   result <- p +
     coord_cartesian(xlim=c(as.Date(startDate), Sys.Date() - 1)) +
@@ -148,6 +148,7 @@ setupPlot <- function(p, startDate = '2020/03/01', isGoogle = TRUE, isDouble=FAL
     scale_color_brewer(palette="Set1") +
     geom_hline(yintercept = 0, alpha=0.5) +
     theme(axis.title.x=element_blank()) +
+    scale_x_date(date_breaks = dateSpacing, date_labels='%b %d') +
     labs(y=ifelse(isGoogle, "Google Community Mobility Index", "Apple Mobility Index"),
          x="",
          color = "Day type",
@@ -181,7 +182,7 @@ setupPlot(
     facet_grid(rows=vars(category), cols=vars(region), scales = 'free_y', switch='y',
                labeller = labeller(region = region.labs, category=category.labs)),
   startDate = '2020/03/01',
-  isGoogle = TRUE);
+  isGoogle = TRUE, dateSpacing = '2 weeks');
 ggsave(filename = '../output/google_all.png', device = 'png', dpi='print',
        width=6.5, height=5.5, units='in', scale=1.5
 );
@@ -232,7 +233,7 @@ setupPlot(
     geom_line(aes(y=value7, color=daytype)) +
     facet_grid(rows=vars(category), cols=vars(region), scales = 'free_y', switch='y'),
   startDate = '2020/02/01',
-  isGoogle=FALSE);
+  isGoogle=FALSE, dateSpacing = '2 weeks');
 ggsave(filename = '../output/apple_all.png', device = 'png', dpi='print',
    width=6.5, height=4, units='in', scale=1.5
 );
@@ -244,9 +245,9 @@ setupPlot(
     facet_grid(rows=vars(category), cols=vars(region), scales='free_y', switch='y',
                labeller = labeller(region = region.labs2)),
   startDate='2020/03/22',
-  isGoogle=FALSE, isDouble=TRUE);
+  isGoogle=FALSE);
 ggsave(filename = '../output/apple_post.png', device = 'png', dpi='print',
-   width=3, height=4, units='in', scale=1.8
+   width=3, height=4, units='in', scale=2.0
 );
 for (region in levels(apple$region)) {
   regionFilter <- apple$region == region;
