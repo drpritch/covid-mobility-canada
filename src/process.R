@@ -142,21 +142,23 @@ for (region in levels(apple$region)) {
 
 setupPlot <- function(p, startDate = '2020/03/01', isGoogle = TRUE, isDouble=FALSE, dateSpacing = '1 week') {
   isApple <- !isGoogle;
+  isTop <- ifelse(isDouble, isApple, TRUE);
+  isBottom <- ifelse(isDouble, isGoogle, TRUE);
   result <- p +
     coord_cartesian(xlim=c(as.Date(startDate), Sys.Date() - 1)) +
     theme_light() +
     scale_color_brewer(palette="Set1") +
     geom_hline(yintercept = 0, alpha=0.5) +
     theme(axis.title.x=element_blank()) +
-    scale_x_date(date_breaks = dateSpacing, date_labels='%b %d') +
     labs(y=ifelse(isGoogle, "Google Community Mobility Index", "Apple Mobility Index"),
-         x="",
-         color = "Day type",
-    caption=ifelse(isDouble, ifelse(isGoogle, "Apple data rebaselined similar to Google. Rolling 7 day average.\ndrpritch.gitub.io/covid-mobility-canada", ""),
-                        ifelse(isGoogle, "Rolling 7 day average. drpritch.github.io/covid-mobility-canada",
-                          "Rebaselined similar to Google data. Rolling 7 day average. drpritch.githib.io/covid-mobility-canada")));
-  if(isGoogle | !isDouble) {
+         x="", color = "");
+  if (isBottom)
+    result <- result + labs(caption=ifelse(isDouble, ifelse(isGoogle, "Apple data rebaselined similar to Google. Rolling 7 day average.\ndrpritch.gitub.io/covid-mobility-canada", ""),
+                     ifelse(isGoogle, "Rolling 7 day average. drpritch.github.io/covid-mobility-canada",
+                            "Rebaselined similar to Google data. Rolling 7 day average. drpritch.githib.io/covid-mobility-canada")));
+  if(isBottom) {
     result <- result +
+      scale_x_date(date_breaks = dateSpacing, date_labels='%b %d') +
       theme(legend.position = "bottom", axis.text.x = element_text(angle = 90));
   } else {
     result <- result +
