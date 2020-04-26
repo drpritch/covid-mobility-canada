@@ -1,3 +1,3 @@
 # covid-mobility-canada
 
-[link](https://drpritch.github.io/covid-mobility-canada/index.html)
+[COVID19 Mobility Dashboard for Canada](https://drpritch.github.io/covid-mobility-canada/index.html)
