@@ -140,19 +140,28 @@ for (region in levels(apple$region)) {
 ########################################################################################
 # Plotting
 
-setupPlot <- function(p, startDate = '2020/03/01', isGoogle = TRUE) {
-  p +
+setupPlot <- function(p, startDate = '2020/03/01', isGoogle = TRUE, isDouble=FALSE) {
+  isApple <- !isGoogle;
+  result <- p +
     coord_cartesian(xlim=c(as.Date(startDate), Sys.Date() - 1)) +
     theme_light() +
     scale_color_brewer(palette="Set1") +
     geom_hline(yintercept = 0, alpha=0.5) +
-    theme(legend.position="bottom") +
+    theme(axis.title.x=element_blank()) +
     labs(y=ifelse(isGoogle, "Google Community Mobility Index", "Apple Mobility Index"),
          x="",
          color = "Day type",
-         caption=ifelse(isGoogle, "Rolling 7 day average. drpritch.github.io/covid-mobility-canada",
-                        "Rebaselined similar to Google data. Rolling 7 day average. drpritch.githib.io/covid-mobility-canada")) +
-    theme(axis.text.x = element_text(angle = 90));
+    caption=ifelse(isDouble, ifelse(isGoogle, "Apple data rebaselined similar to Google. Rolling 7 day average.\ndrpritch.gitub.io/covid-mobility-canada", ""),
+                        ifelse(isGoogle, "Rolling 7 day average. drpritch.github.io/covid-mobility-canada",
+                          "Rebaselined similar to Google data. Rolling 7 day average. drpritch.githib.io/covid-mobility-canada")));
+  if(isGoogle | !isDouble) {
+    result <- result +
+      theme(legend.position = "bottom", axis.text.x = element_text(angle = 90));
+  } else {
+    result <- result +
+      theme(legend.position = 'none', axis.text.x = element_blank());
+  }
+  result;
 }
 
 
@@ -205,7 +214,7 @@ for (region in levels(google$region)) {
       facet_wrap(~category, switch='y',
                  labeller = labeller(category=category.labs)),
     startDate = '2020/03/01',
-    isGoogle = TRUE);
+    isGoogle = TRUE, isDouble = TRUE);
   ggsave(filename = paste0('../output/google_', regionFilename, '.png'), device = 'png', dpi='print',
          width=4, height=3, units='in', scale=1.5);
 }
@@ -235,7 +244,7 @@ setupPlot(
     facet_grid(rows=vars(category), cols=vars(region), scales='free_y', switch='y',
                labeller = labeller(region = region.labs2)),
   startDate='2020/03/22',
-  isGoogle=FALSE);
+  isGoogle=FALSE, isDouble=TRUE);
 ggsave(filename = '../output/apple_post.png', device = 'png', dpi='print',
    width=3, height=4, units='in', scale=1.8
 );
@@ -244,12 +253,12 @@ for (region in levels(apple$region)) {
   regionFilename <- tolower(gsub(' ','',region));
   setupPlot(
     ggplot(apple[regionFilter,], aes(y=value, x=date)) +
-      ggtitle(paste0("Mobility in ", region, " During Covid (as of ", format.Date(max(google$date), "%b %d"), ")")) +
+      ggtitle(paste0("Mobility in ", region, " During Covid (as of ", format.Date(max(apple$date), "%b %d"), ")")) +
       geom_ribbon(aes(ymin=valueMin, ymax=value7, fill=daytype), alpha=0.25, show.legend=FALSE) +
       geom_line(aes(y=value7, color=daytype)) +
       facet_wrap(~category, switch='y'),
     startDate = '2020/03/01',
-    isGoogle = FALSE);
+    isGoogle = FALSE, isDouble=TRUE);
   ggsave(filename = paste0('../output/apple_',regionFilename,'.png'), device = 'png', dpi='print',
-         width=4, height=2.3, units='in', scale=1.5);
+         width=4, height=1.3, units='in', scale=1.5);
 }
