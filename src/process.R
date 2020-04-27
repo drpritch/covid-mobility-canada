@@ -1,6 +1,7 @@
 library('ggplot2');
 library('forcats');
 library('tidyr');
+library('zoo');
 
 getDaytype <- function(dates) {
   result <- weekdays(dates) %in% c('Saturday','Sunday');
@@ -76,15 +77,6 @@ google <- droplevels(google);
 #google$region_date <- with(google, interaction(google$date, google$region));
 
 #print(xtabs(formula = value ~ region_date + category_daytype, google)))
-
-google$valueMin <- 0;
-for(daytype in levels(google$daytype))
-  for(category in levels(google$category))
-    for(region in levels(google$region)) {
-      filter <- google$daytype == daytype & google$category==category & google$region==region;
-      # Using value7 with date+4 gives 5-day average from 3/23-3/27
-      google[filter,]$valueMin <- google[filter & google$date>=minDate + 4,]$value7[1];
-    }
 
 
 
