@@ -1,50 +1,56 @@
+<!DOCTYPE html>
 <html>
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>COVID-19 &amp; Mobility Tracking for Canada</title>
 <style>
-p.regionSelect {
-  background-color: steelblue;
+.segmented-control {
+	display: table;
+	width: 100%;
+	margin: 5px 0;
+	padding: 0;
 }
-p.regionSelect span {
-  background-color: steelblue;
-  color: white;
+
+.segmented-control li {
+	display: table-cell;
+	margin: 0;
+	padding: 0;
+	list-style-type: none;
+	width: 10%;
+}
+
+.segmented-control li input {
+	position: absolute;
+	visibility: hidden;
+}
+
+.segmented-control li label {
+	display: block;
+	margin: 0 -1px -1px 0; /* -1px margin removes double-thickness borders between items */
+	padding: 1em .25em;
+
+	border: 1px solid steelblue;
+
+	font: 8px sans-serif; 
+	text-align: center;  
+
+	cursor: pointer;
+}
+
+.segmented-control li label:hover {
+	background: lightsteelblue;
+}
+
+.segmented-control li input:checked + label {
+	background: steelblue;
+	color: white; 
 }
 </style>
 </head>
 <body>
-  <script>
-    updateRegion = function() {
-      for (i = 0; i < window.regionSelect.children.length; ++i)
-        if (window.regionSelect.children[i].selected) {
-          region = window.regionSelect.children[i].value;
-          var cityLUT1 = {
-            'canada': 'canada',
-            'bc': 'vancouver',
-            'alberta': 'edmonton',
-            'ontario': 'toronto',
-            'quebec': 'montreal',
-            'novascotia': 'halifax'
-          };
-          var cityLUT2 = {
-            'alberta': 'calgary',
-            'ontario': 'ottawa'
-          };
-          var city1 = cityLUT1[region], city2 = cityLUT2[region];
-          window.appleGraph.style.display = 'none';
-          if (city1 !== undefined) {
-            window.appleGraph.style.display = 'block';
-            window.appleGraph.src = 'output/apple_' + city1 + ".png";
-          }
-          window.appleGraph2.style.display = 'none';
-          if (city2 !== undefined) {
-            window.appleGraph2.style.display = 'block';
-            window.appleGraph2.src = 'output/apple_' + city2 + ".png";
-          }
-          window.googleGraph.src = "output/google_" + region + ".png";
-          break;
-        }
-    }
-  </script>
-<h1>Social Distancing Mobility Tracking for Canada </h1>
+<div style="max-width: 800px; margin: auto">
+<h1>COVID-19 &amp; Mobility Tracking for Canada </h1>
 <p><i>Data last updated April 27, 2020 19:30 EDT</i></p>
 
 <p>A project by <a href="http://davidpritchard.org">David Pritchard</a> / <a
@@ -53,23 +59,35 @@ href="https://github.com/drpritch/covid-mobility-canada">GitHub</a>.</p>
 
 <p>Intervention: Social Distancing. Proxy Metric: Mobility</p>
 
-<p>Region: <select onchange="updateRegion()" id="regionSelect">
-<option value="canada">Canada</option>
-<option value="bc">British Columbia</option>
-<option value="alberta">Alberta</option>
-<option value="saskatchewan">Saskatchewan</option>
-<option value="manitoba">Manitoba</option>
-<option value="ontario">Ontario</option>
-<option value="quebec">Qu&eacute;bec</option>
-<option value="newbrunswick">New Brunswick</option>
-<option value="novascotia">Nova Scotia</option>
-<option value="newfoundland">Newfoundland &amp; Labrador</option>
-</select></p>
+<form id="myform">
+<ul id="regionSelect" class="segmented-control">
+  <li><input type="radio" name="regionSelect" value="canada" id="rad_canada" checked />
+    <label for="rad_canada">Canada</label></li>
+  <li><input type="radio" name="regionSelect" value="canada" id="rad_bc" />
+  <label for="rad_bc">Brit&nbsp;Colum</label></li>
+  <li><input type="radio" name="regionSelect" value="alberta" id="rad_alberta" />
+  <label for="rad_alberta">Alberta</label></li>
+  <li><input type="radio" name="regionSelect" value="saskatchewan" id="rad_saskatchewan" />
+  <label for="rad_saskatchewan">Saskatch</label></li><br/>
+  <li><input type="radio" name="regionSelect" value="manitoba" id="rad_manitoba" />
+  <label for="rad_manitoba">Manitoba</label></li>
+  <li><input type="radio" name="regionSelect" value="ontario" id="rad_ontario" />
+  <label for="rad_ontario">Ontario</label></li>
+  <li><input type="radio" name="regionSelect" value="quebec" id="rad_quebec" />
+  <label for="rad_quebec">Qu&eacute;bec</label></li><br/>
+  <li><input type="radio" name="regionSelect" value="newbrunswick" id="rad_newbrunswick" />
+  <label for="rad_newbrunswick">New&nbsp;Bruns</label></li>
+  <li><input type="radio" name="regionSelect" value="novascotia" id="rad_novascotia" />
+  <label for="rad_novascotia">Nova&nbsp;Scot</label></li>
+  <li><input type="radio" name="regionSelect" value="newfoundland" id="rad_newfoundland" />
+  <label for="rad_newfoundland">Newfound</label></li>
+</ul>
+</form>
 
 <p style="line-height: 0em">
-<img src="output/apple_canada.png" id="appleGraph" width="600px" /><br/>
-<img src="output/apple_calgary.png" id="appleGraph2" width="600px" style="display:none" /><br/>
-<img src="output/google_canada.png" id="googleGraph" width="600px"/>
+<img src="output/apple_canada.png" id="appleGraph" width="100%" /><br/>
+<img src="output/apple_calgary.png" id="appleGraph2" width="100%" style="display:none" /><br/>
+<img src="output/google_canada.png" id="googleGraph" width="100%"/>
 </p>
 
 <p>Data sources</p>
@@ -113,8 +131,8 @@ have Monday and Tuesday data but not yet Wednesday to Friday data.</li>
     </ul></li>
   </ul>
 
-  <a href="output/apple_all.png"><img src="output/apple_all.png" width="600px" /><a/><br/>
-  <a href="output/apple_post.png"><img src="output/apple_post.png" width="400px" /></a>
+  <a href="output/apple_all.png"><img src="output/apple_all.png" width="100%" /><a/><br/>
+  <a href="output/apple_post.png"><img src="output/apple_post.png" width="70%" /></a>
 
 <a name="google"><h2>Google Community Mobility Report</h2></a>
   <ul>
@@ -132,8 +150,8 @@ separation of weekdays and weekends, and aggregation to a weekly
 total. In Google's published reports, be aware that the "headline"
 percentage shown for each category refers to travel on the final day of the dataset, a Friday.</li>
   </ul>
-  <a href="output/google_all.png"><img src="output/google_all.png" width="600px" /></a><br/>
-  <a href="output/google_post.png"><img src="output/google_post.png" width="400px"/></a>
+  <a href="output/google_all.png"><img src="output/google_all.png" width="100%" /></a><br/>
+  <a href="output/google_post.png"><img src="output/google_post.png" width="70%"/></a>
 
 <a name="citymapper"><h2>CityMapper Mobility Index</h2></a>
 <ul>
@@ -196,5 +214,39 @@ submissions or results</li>
     <li><a href="https://www.kflaphi.ca/aces-pandemic-tracker/">ACES Pandemic Tracker</a>:
 Ontario hospital admissions combined with symptom keywords</li>
   </ul>
+</div>
+<script>
+  setRegion = function(regionName) {
+    var cityLUT1 = {
+      'canada': 'canada',
+      'bc': 'vancouver',
+      'alberta': 'edmonton',
+      'ontario': 'toronto',
+      'quebec': 'montreal',
+      'novascotia': 'halifax'
+    };
+    var cityLUT2 = {
+      'alberta': 'calgary',
+      'ontario': 'ottawa'
+    };
+    var city1 = cityLUT1[regionName], city2 = cityLUT2[regionName];
+    window.appleGraph.style.display = 'none';
+    if (city1 !== undefined) {
+      window.appleGraph.style.display = 'block';
+      window.appleGraph.src = 'output/apple_' + city1 + ".png";
+    }
+    window.appleGraph2.style.display = 'none';
+    if (city2 !== undefined) {
+      window.appleGraph2.style.display = 'block';
+      window.appleGraph2.src = 'output/apple_' + city2 + ".png";
+    }
+    window.googleGraph.src = "output/google_" + regionName + ".png";
+  }
+
+  for (radio of document.forms.myform.regionSelect)
+    radio.addEventListener('change', function() { setRegion(this.value); });
+
+  setRegion('canada');
+  </script>
 </body>
 </html>
