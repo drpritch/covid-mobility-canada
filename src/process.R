@@ -16,7 +16,7 @@ getRolling <- function(data) {
   for(category in levels(data$category))
     for(region in levels(data$region)) {
       filter <- data$category == category & data$region == region;
-      result[filter] <- rollmean(data[filter,]$value, 7, fill=NA, align='right');
+      result[filter] <- rollmean(data[filter,]$value, 7, fill=NA, align='center');
     }
   result
 }
@@ -25,8 +25,8 @@ getMin <- function(data, minDate = as.Date('2020/03/23')) {
   for(category in levels(data$category))
     for(region in levels(data$region)) {
       filter <- data$category==category &  data$region==region &
-        data$date>=minDate +6;
-      # Using value7 with date+6 gives 7-day average from 3/23-3/29
+        data$date>=minDate +3;
+      # Using value7 with date+3 gives 7-day average from 3/23-3/29
       # Deliberately leave everything before date threshold as NA
       result[filter] <- data[filter,]$value7[1];
     }
@@ -215,19 +215,20 @@ ggsave(filename = '../output/google_post.png', device = 'png', dpi='print',
 
 google$valueMin <- getMin(google);
 google$valueMin[google$category == 'park'] <- NA;
-google$value7_sign <- factor(ifelse(google$value7 >= google$valueMin, 'pos', 'neg'), levels=c('pos','neg'));
-google$value7_sign[is.na(google$value7_sign)] <- 'pos';
+google$value7_pos <- pmax(google$value7, google$valueMin);
+google$value7_neg <- pmin(google$value7, google$valueMin);
 for (region in levels(google$region)) {
   regionFilter <- google$region == region;
   regionFilename <- tolower(gsub(' ','',region));
   setupPlot(
-    ggplot(google[regionFilter,], aes(y=value, x=date)) +
+    ggplot(google[regionFilter,], aes(y=value7, x=date)) +
       ggtitle(paste0("Mobility in ", region, " During Covid (as of ", format.Date(max(google$date), "%b %d"), ")")) +
-      geom_ribbon(data=google[regionFilter & google$value7_sign=='pos',],
-                  aes(ymin=valueMin, ymax=value7), fill=redFill, alpha=0.25, show.legend=FALSE) +
-      geom_ribbon(data=google[regionFilter & google$value7_sign=='neg',],
-                  aes(ymin=valueMin, ymax=value7), fill=blueFill, alpha=0.25, show.legend=FALSE) +
-      geom_line(aes(y=value7)) +
+      geom_point(aes(y=value), size=0.25, alpha=0.2) +
+      geom_ribbon(data=google[regionFilter,],
+                  aes(ymin=valueMin, ymax=value7_pos), fill=redFill, alpha=0.5, show.legend=FALSE) +
+      geom_ribbon(data=google[regionFilter,],
+                  aes(ymin=valueMin, ymax=value7_neg), fill=blueFill, alpha=0.5, show.legend=FALSE) +
+      geom_line() +
       facet_wrap(~category, switch='y',
                  labeller = labeller(category=category.labs)),
     startDate = '2020/03/01',
@@ -238,8 +239,8 @@ for (region in levels(google$region)) {
 
 apple$value7 <- getRolling(apple);
 apple$valueMin <- getMin(apple);
-apple$value7_sign <- factor(ifelse(apple$value7 >= apple$valueMin, 'pos', 'neg'), levels=c('pos','neg'));
-apple$value7_sign[is.na(apple$value7_sign)] <- 'pos';
+apple$value7_pos <- pmax(apple$value7, apple$valueMin);
+apple$value7_neg <- pmin(apple$value7, apple$valueMin);
 
 region.labs2 <- levels(apple$region);
 region.labs2[c(3,5)] <- c('Vancouv', 'Edmont');
@@ -272,10 +273,11 @@ for (province in levels(apple$province)) {
   provinceFilename <- tolower(gsub(' ','',province));
   setupPlot(
     ggplot(apple[provinceFilter,], aes(y=value7, x=date)) +
-      geom_ribbon(data=apple[provinceFilter & apple$value7_sign=='pos',],
-                  aes(ymin=valueMin, ymax=value7), fill=redFill, alpha=0.25, show.legend=FALSE) +
-      geom_ribbon(data=apple[provinceFilter & apple$value7_sign=='neg',],
-                  aes(ymin=valueMin, ymax=value7), fill=blueFill, alpha=0.25, show.legend=FALSE) +
+      geom_point(aes(y=value), size=0.25, alpha=0.2) +
+      geom_ribbon(data=apple[provinceFilter,],
+                  aes(ymin=valueMin, ymax=value7_pos), fill=redFill, alpha=0.5, show.legend=FALSE) +
+      geom_ribbon(data=apple[provinceFilter,],
+                  aes(ymin=valueMin, ymax=value7_neg), fill=blueFill, alpha=0.5, show.legend=FALSE) +
       geom_line() +
       facet_grid(rows=vars(region), cols=vars(category), switch='y'),
     startDate = '2020/03/01',
