@@ -1,7 +1,7 @@
 library('ggplot2');
 library('forcats');
 library('tidyr');
-library('zoo');
+library('zoo');   # for rollmean
 
 getDaytype <- function(dates) {
   result <- weekdays(dates) %in% c('Saturday','Sunday');
@@ -83,11 +83,13 @@ google <- droplevels(google);
 apple <- read.csv('../input/apple.csv');
 apple <- as.data.frame(
   apple %>%
-  tidyr::pivot_longer(cols=4:ncol(apple), names_to='date', names_prefix='X')
+  tidyr::pivot_longer(cols=5:ncol(apple), names_to='date', names_prefix='X')
 );
 apple$date <- as.Date(apple$date, "%Y.%m.%d");
 regionOrder <-
-  c('Canada', 'Vancouver', 'Edmonton', 'Calgary', 'Toronto', 'Ottawa', 'Montreal', 'Halifax');
+  c('Canada', 'British Columbia', 'Alberta', 'Saskatchewan', 'Manitoba', 'Ontario',
+    'Quebec', 'New Brunswick', 'Nova Scotia', 'Newfoundland',
+    'Vancouver', 'Edmonton', 'Calgary', 'Toronto', 'Ottawa', 'Montreal', 'Halifax');
 apple <- apple[apple$region%in% regionOrder,];
 apple$region <- fct_relevel(apple$region, regionOrder);
 apple$daytype <- getDaytype(apple$date);
@@ -136,9 +138,18 @@ setupPlot <- function(p, startDate = '2020/03/01', isGoogle = TRUE, isDouble=FAL
   isApple <- !isGoogle;
   isTop <- ifelse(isDouble, isApple, TRUE);
   isBottom <- ifelse(isDouble, isGoogle, TRUE);
+  isPost <- dateSpacing == '1 week' & isDouble==FALSE;
+  ylim <- NULL;
+  if(!isPost) {
+    ylim <- c(-90, ifelse(isApple, 30, 90));
+  }
+  else if(isGoogle) {
+    ylim <- c(-90, NA);
+  }
   result <- p +
-    coord_cartesian(xlim=c(as.Date(startDate), Sys.Date() - 1)) +
     theme_light() +
+    scale_y_continuous(breaks=seq(-100,200,by=20), minor_breaks=seq(-100,200,by=10),
+                       limits=ylim) +
     scale_color_brewer(palette="Set1") +
     geom_hline(yintercept = 0, alpha=0.5) +
     theme(axis.title.x=element_blank()) +
@@ -150,10 +161,12 @@ setupPlot <- function(p, startDate = '2020/03/01', isGoogle = TRUE, isDouble=FAL
                             "Rebaselined similar to Google data. Rolling 7 day average. drpritch.githib.io/covid-mobility-canada")));
   if(isBottom) {
     result <- result +
-      scale_x_date(date_breaks = dateSpacing, date_labels='%b %d') +
+      scale_x_date(date_breaks = dateSpacing, date_labels='%b %d',
+                   limits = c(as.Date(startDate), Sys.Date() - 1)) +
       theme(legend.position = "bottom", axis.text.x = element_text(angle = 90));
   } else {
     result <- result +
+      scale_x_date(limits = c(as.Date(startDate), Sys.Date() - 1)) +
       theme(legend.position = 'none', axis.text.x = element_blank());
   }
   result;
@@ -241,7 +254,7 @@ setupPlot(
   startDate='2020/03/22',
   isGoogle=FALSE);
 ggsave(filename = '../output/apple_post.png', device = 'png', dpi='print',
-   width=3, height=4, units='in', scale=2.0
+   width=3.5, height=4, units='in', scale=2.0
 );
 for (region in levels(apple$region)) {
   regionFilter <- apple$region == region;
