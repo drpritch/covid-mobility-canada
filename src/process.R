@@ -242,7 +242,7 @@ apple$value7_sign <- factor(ifelse(apple$value7 >= apple$valueMin, 'pos', 'neg')
 apple$value7_sign[is.na(apple$value7_sign)] <- 'pos';
 
 region.labs2 <- levels(apple$region);
-region.labs2[2:3] <- c('Vancouv', 'Edmont');
+region.labs2[c(3,5)] <- c('Vancouv', 'Edmont');
 names(region.labs2) <- levels(apple$region);
 
 setupPlot(
