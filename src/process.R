@@ -2,6 +2,7 @@ library('ggplot2');
 library('forcats');
 library('tidyr');
 library('zoo');   # for rollmean
+library('RColorBrewer');
 
 getDaytype <- function(dates) {
   result <- weekdays(dates) %in% c('Saturday','Sunday');
@@ -172,6 +173,8 @@ setupPlot <- function(p, startDate = '2020/03/01', isGoogle = TRUE, isDouble=FAL
                             "Rebaselined similar to Google data. Rolling 7 day average. drpritch.githib.io/covid-mobility-canada")));
   result;
 }
+redFill <- brewer.pal(n=8, 'Set1')[1];
+blueFill <- brewer.pal(n=8, 'Set1')[2];
 
 
 region.labs = c('Canada', 'Brit Columbia', 'Alberta', 'Saskatchewan', 'Manitoba', 'Ontario', 'Quebec', 'New Brunsw', 'Nova Scotia', 'Newfoundland');
@@ -212,13 +215,18 @@ ggsave(filename = '../output/google_post.png', device = 'png', dpi='print',
 
 google$valueMin <- getMin(google);
 google$valueMin[google$category == 'park'] <- NA;
+google$value7_sign <- factor(ifelse(google$value7 >= google$valueMin, 'pos', 'neg'), levels=c('pos','neg'));
+google$value7_sign[is.na(google$value7_sign)] <- 'pos';
 for (region in levels(google$region)) {
   regionFilter <- google$region == region;
   regionFilename <- tolower(gsub(' ','',region));
   setupPlot(
     ggplot(google[regionFilter,], aes(y=value, x=date)) +
       ggtitle(paste0("Mobility in ", region, " During Covid (as of ", format.Date(max(google$date), "%b %d"), ")")) +
-      geom_ribbon(aes(ymin=valueMin, ymax=value7), alpha=0.25, show.legend=FALSE) +
+      geom_ribbon(data=google[regionFilter & google$value7_sign=='pos',],
+                  aes(ymin=valueMin, ymax=value7), fill=redFill, alpha=0.25, show.legend=FALSE) +
+      geom_ribbon(data=google[regionFilter & google$value7_sign=='neg',],
+                  aes(ymin=valueMin, ymax=value7), fill=blueFill, alpha=0.25, show.legend=FALSE) +
       geom_line(aes(y=value7)) +
       facet_wrap(~category, switch='y',
                  labeller = labeller(category=category.labs)),
@@ -230,6 +238,8 @@ for (region in levels(google$region)) {
 
 apple$value7 <- getRolling(apple);
 apple$valueMin <- getMin(apple);
+apple$value7_sign <- factor(ifelse(apple$value7 >= apple$valueMin, 'pos', 'neg'), levels=c('pos','neg'));
+apple$value7_sign[is.na(apple$value7_sign)] <- 'pos';
 
 region.labs2 <- levels(apple$region);
 region.labs2[2:3] <- c('Vancouv', 'Edmont');
@@ -262,7 +272,10 @@ for (province in levels(apple$province)) {
   provinceFilename <- tolower(gsub(' ','',province));
   setupPlot(
     ggplot(apple[provinceFilter,], aes(y=value7, x=date)) +
-      geom_ribbon(aes(ymin=valueMin, ymax=value7), alpha=0.25, show.legend=FALSE) +
+      geom_ribbon(data=apple[provinceFilter & apple$value7_sign=='pos',],
+                  aes(ymin=valueMin, ymax=value7), fill=redFill, alpha=0.25, show.legend=FALSE) +
+      geom_ribbon(data=apple[provinceFilter & apple$value7_sign=='neg',],
+                  aes(ymin=valueMin, ymax=value7), fill=blueFill, alpha=0.25, show.legend=FALSE) +
       geom_line() +
       facet_grid(rows=vars(region), cols=vars(category), switch='y'),
     startDate = '2020/03/01',

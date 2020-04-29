@@ -52,7 +52,7 @@
 <body>
 <div style="max-width: 800px; margin: auto">
 <h1>COVID-19 &amp; Mobility Tracking for Canada </h1>
-<p><i>Data last updated April 27, 2020 19:30 EDT</i></p>
+<p><i>Data last updated April 28, 2020 19:30 EDT</i></p>
 
 <p>A project by <a href="http://davidpritchard.org">David Pritchard</a> / <a
 href="https://twitter.com/drpritch2">@drpritch2</a>. Source code at <a
@@ -125,9 +125,8 @@ shows up as part of the fluctuation in the raw data. In the graphs here,
 the data has been "rebaselined": each Monday is relative to the median activity
 level for Mondays between Jan. 13 and Feb. 12, and likewise for each other
 day of the week.</li>
-       <li>Aggregated to a single weekly number, largely to smooth out
-day-to-day noise. The final datapoint is often "incomplete" - e.g., it may
-have Monday and Tuesday data but not yet Wednesday to Friday data.</li>
+       <li>Rolling seven day average. This smooths out day-to-day noise, and also eliminates
+day-of-week variation: every datapoint includes five weekdays and two weekend days.</li>
     </ul></li>
   </ul>
 
@@ -145,10 +144,10 @@ reported 12 days late, Friday data reported 6 days late.</li>
 composition makes province-to-province comparisons difficult.</li>
     <li>Actual travel, measured at the destination location.</li>
     <li>Categorized by destination type/trip purpose. Pretty solid basis for analysis.</li>
-    <li>The raw data is already reasonable. The only change in this analysis is
-separation of weekdays and weekends, and aggregation to a weekly
-total. In Google's published reports, be aware that the "headline"
-percentage shown for each category refers to travel on the final day of the dataset, a Friday.</li>
+    <li>The raw data is already reasonable. The only change in this analysis is a rolling
+seven-day average, for the same reasons as discussed for Apple data. In Google's published reports,
+be aware that the "headline" percentage shown for each category refers to travel on the final day of
+the dataset, a Friday.</li>
   </ul>
   <a href="output/google_all.png"><img src="output/google_all.png" width="100%" /></a><br/>
   <a href="output/google_post.png"><img src="output/google_post.png" width="70%"/></a>
