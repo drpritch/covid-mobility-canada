@@ -12,25 +12,23 @@ getDaytype <- function(dates) {
 getRolling <- function(data) {
   result <- rep(NA, nrow(data));
   # TODO: must be some way to do this with a group by.
-  for(daytype in levels(data$daytype))
-    for(category in levels(data$category))
-      for(region in levels(data$region)) {
-        filter <- data$daytype == daytype & data$category == category & data$region == region;
-        result[filter] <- rollmean(data[filter,]$value, ifelse(daytype=='Weekday',5,2), fill=NA, align='right');
-      }
+  for(category in levels(data$category))
+    for(region in levels(data$region)) {
+      filter <- data$category == category & data$region == region;
+      result[filter] <- rollmean(data[filter,]$value, 7, fill=NA, align='right');
+    }
   result
 }
 getMin <- function(data, minDate = as.Date('2020/03/23')) {
   result <- rep(NA, nrow(data));
-  for(daytype in levels(data$daytype))
-    for(category in levels(data$category))
-      for(region in levels(data$region)) {
-        filter <- data$daytype == daytype & data$category==category & 
-          data$region==region & data$date>=minDate +4;
-        # Using value7 with date+4 gives 5-day average from 3/23-3/27
-        # Deliberately leave everything before date threshold as NA
-        result[filter] <- data[filter,]$value7[1];
-      }
+  for(category in levels(data$category))
+    for(region in levels(data$region)) {
+      filter <- data$category==category &  data$region==region &
+        data$date>=minDate +6;
+      # Using value7 with date+6 gives 7-day average from 3/23-3/29
+      # Deliberately leave everything before date threshold as NA
+      result[filter] <- data[filter,]$value7[1];
+    }
   result
 }
 
@@ -87,11 +85,22 @@ apple <- as.data.frame(
 );
 apple$date <- as.Date(apple$date, "%Y.%m.%d");
 regionOrder <-
-  c('Canada', 'British Columbia', 'Alberta', 'Saskatchewan', 'Manitoba', 'Ontario',
-    'Quebec', 'New Brunswick', 'Nova Scotia', 'Newfoundland',
-    'Vancouver', 'Edmonton', 'Calgary', 'Toronto', 'Ottawa', 'Montreal', 'Halifax');
+  c('Canada', 'BC', 'Vancouver', 'Alberta', 'Edmonton', 'Calgary',
+    'Saskatchewan', 'Manitoba', 'Ontario', 'Toronto', 'Ottawa',
+    'Quebec', 'Montreal', 'New Brunswick', 'Nova Scotia', 'Halifax', 'Newfoundland');
+apple$region <- fct_recode(apple$region,
+                           BC='British Columbia',
+                           PEI='Prince Edward Island',
+                           Newfoundland='Newfoundland and Labrador',
+                           NWT='Northwest Territories');
 apple <- apple[apple$region%in% regionOrder,];
 apple$region <- fct_relevel(apple$region, regionOrder);
+apple$province <- apple$region;
+apple$province[apple$region=='Vancouver'] <- 'BC';
+apple$province[apple$region %in% c('Edmonton', 'Calgary')] <- 'Alberta';
+apple$province[apple$region %in% c('Toronto', 'Ottawa')] <- 'Ontario';
+apple$province[apple$region == 'Montreal'] <- 'Quebec';
+apple$province[apple$region == 'Halifax'] <- 'Nova Scotia';
 apple$daytype <- getDaytype(apple$date);
 colnames(apple)[3] <- 'category'; # mode, really
 
@@ -134,7 +143,7 @@ for (region in levels(apple$region)) {
 ########################################################################################
 # Plotting
 
-setupPlot <- function(p, startDate = '2020/03/01', isGoogle = TRUE, isDouble=FALSE, dateSpacing = '1 week') {
+setupPlot <- function(p, startDate = '2020/03/01', isGoogle = TRUE, isDouble=FALSE, dateSpacing = '1 week', regionName=NULL) {
   isApple <- !isGoogle;
   isTop <- ifelse(isDouble, isApple, TRUE);
   isBottom <- ifelse(isDouble, isGoogle, TRUE);
@@ -148,27 +157,19 @@ setupPlot <- function(p, startDate = '2020/03/01', isGoogle = TRUE, isDouble=FAL
   }
   result <- p +
     theme_light() +
-    scale_y_continuous(breaks=seq(-100,200,by=20), minor_breaks=seq(-100,200,by=10),
-                       limits=ylim) +
+    scale_y_continuous(breaks=seq(-100,200,by=20), minor_breaks=seq(-100,200, by=10),
+                       limits=ylim,
+                       name=ifelse(isGoogle, "Google Community Mobility Index", "Apple Mobility Index")) +
+    scale_x_date(date_breaks = dateSpacing, date_labels='%b %d',
+                 limits = c(as.Date(startDate), Sys.Date() - 1)) +
     scale_color_brewer(palette="Set1") +
     geom_hline(yintercept = 0, alpha=0.5) +
-    theme(axis.title.x=element_blank()) +
-    labs(y=ifelse(isGoogle, "Google Community Mobility Index", "Apple Mobility Index"),
-         x="", color = "");
+    theme(axis.title.x=element_blank(), axis.text.x = element_text(angle = 90)) +
+    labs(x="", color="");
   if (isBottom)
     result <- result + labs(caption=ifelse(isDouble, ifelse(isGoogle, "Apple data rebaselined similar to Google. Rolling 7 day average.\ndrpritch.gitub.io/covid-mobility-canada", ""),
                      ifelse(isGoogle, "Rolling 7 day average. drpritch.github.io/covid-mobility-canada",
                             "Rebaselined similar to Google data. Rolling 7 day average. drpritch.githib.io/covid-mobility-canada")));
-  if(isBottom) {
-    result <- result +
-      scale_x_date(date_breaks = dateSpacing, date_labels='%b %d',
-                   limits = c(as.Date(startDate), Sys.Date() - 1)) +
-      theme(legend.position = "bottom", axis.text.x = element_text(angle = 90));
-  } else {
-    result <- result +
-      scale_x_date(limits = c(as.Date(startDate), Sys.Date() - 1)) +
-      theme(legend.position = 'none', axis.text.x = element_blank());
-  }
   result;
 }
 
@@ -185,7 +186,7 @@ names(category.labs2) = levels(google$category);google$value7 <- getRolling(goog
 setupPlot(
   ggplot(google, aes(y=value7, x=date)) +
     ggtitle(paste0("Mobility in Canada During Covid (as of ", format.Date(max(google$date), "%b %d"), ")")) +
-    geom_line(aes(y=value7, color=daytype)) +
+    geom_line(aes(y=value7)) +
     facet_grid(rows=vars(category), cols=vars(region), scales = 'free_y', switch='y',
                labeller = labeller(region = region.labs, category=category.labs)),
   startDate = '2020/03/01',
@@ -197,8 +198,8 @@ ggsave(filename = '../output/google_all.png', device = 'png', dpi='print',
 setupPlot(
   ggplot(google[google$date>=as.Date("2020-03-23") - 7,], aes(y=value, x=date)) +
     ggtitle(paste0("Mobility in Canada After Lockdown Low (as of ", format.Date(max(google$date), "%b %d"), ")")) +
-    geom_point(aes(color=daytype), size=0.5, alpha=0.2) +
-    geom_line(aes(y=value7, color=daytype)) +
+    geom_point(size=0.5, alpha=0.2) +
+    geom_line(aes(y=value7)) +
     facet_grid(rows=vars(category), cols=vars(region), scales='free_y', switch='y',
                labeller = labeller(region = region.labs2, category=category.labs2)),
   startDate = '2020/03/22',
@@ -210,15 +211,15 @@ ggsave(filename = '../output/google_post.png', device = 'png', dpi='print',
 
 
 google$valueMin <- getMin(google);
-google$valueMin[google$category == 'park' & google$daytype=='Weekend/Holiday'] <- NA;
+google$valueMin[google$category == 'park'] <- NA;
 for (region in levels(google$region)) {
   regionFilter <- google$region == region;
   regionFilename <- tolower(gsub(' ','',region));
   setupPlot(
     ggplot(google[regionFilter,], aes(y=value, x=date)) +
       ggtitle(paste0("Mobility in ", region, " During Covid (as of ", format.Date(max(google$date), "%b %d"), ")")) +
-      geom_ribbon(aes(ymin=valueMin, ymax=value7, fill=daytype), alpha=0.25, show.legend=FALSE) +
-      geom_line(aes(y=value7, color=daytype)) +
+      geom_ribbon(aes(ymin=valueMin, ymax=value7), alpha=0.25, show.legend=FALSE) +
+      geom_line(aes(y=value7)) +
       facet_wrap(~category, switch='y',
                  labeller = labeller(category=category.labs)),
     startDate = '2020/03/01',
@@ -237,36 +238,37 @@ names(region.labs2) <- levels(apple$region);
 setupPlot(
   ggplot(apple, aes(y=value7, x=date)) +
     ggtitle(paste0("Mobility in Canada During Covid (as of ", format.Date(max(apple$date), "%b %d"), ")")) +
-    geom_line(aes(y=value7, color=daytype)) +
+    geom_line(aes(y=value7)) +
     facet_grid(rows=vars(category), cols=vars(region), scales = 'free_y', switch='y'),
   startDate = '2020/02/01',
   isGoogle=FALSE, dateSpacing = '2 weeks');
 ggsave(filename = '../output/apple_all.png', device = 'png', dpi='print',
-   width=6.5, height=4, units='in', scale=1.5
+   width=12, height=4, units='in', scale=1.5
 );
 setupPlot(
   ggplot(apple[apple$date>=as.Date("2020-03-23") - 7,], aes(y=value, x=date)) +
     ggtitle(paste0("Mobility in Canada After Lockdown Low (as of ", format.Date(max(apple$date), "%b %d"), ")")) +
-    geom_point(aes(color=daytype), size=0.5, alpha=0.2) +
-    geom_line(aes(y=value7, color=daytype)) +
+    geom_point(size=0.5, alpha=0.2) +
+    geom_line(aes(y=value7)) +
     facet_grid(rows=vars(category), cols=vars(region), scales='free_y', switch='y',
                labeller = labeller(region = region.labs2)),
   startDate='2020/03/22',
   isGoogle=FALSE);
 ggsave(filename = '../output/apple_post.png', device = 'png', dpi='print',
-   width=3.5, height=4, units='in', scale=2.0
+   width=6, height=4, units='in', scale=2.0
 );
-for (region in levels(apple$region)) {
-  regionFilter <- apple$region == region;
-  regionFilename <- tolower(gsub(' ','',region));
+for (province in levels(apple$province)) {
+  provinceFilter <- apple$province == province;
+  provinceFilename <- tolower(gsub(' ','',province));
   setupPlot(
-    ggplot(apple[regionFilter,], aes(y=value, x=date)) +
-      ggtitle(paste0("Mobility in ", region, " During Covid (as of ", format.Date(max(apple$date), "%b %d"), ")")) +
-      geom_ribbon(aes(ymin=valueMin, ymax=value7, fill=daytype), alpha=0.25, show.legend=FALSE) +
-      geom_line(aes(y=value7, color=daytype)) +
-      facet_wrap(~category, switch='y'),
+    ggplot(apple[provinceFilter,], aes(y=value7, x=date)) +
+      geom_ribbon(aes(ymin=valueMin, ymax=value7), alpha=0.25, show.legend=FALSE) +
+      geom_line() +
+      facet_grid(rows=vars(region), cols=vars(category), switch='y'),
     startDate = '2020/03/01',
     isGoogle = FALSE, isDouble=TRUE);
-  ggsave(filename = paste0('../output/apple_',regionFilename,'.png'), device = 'png', dpi='print',
-         width=4, height=1.3, units='in', scale=1.5);
+  nregions <- length(levels(droplevels(apple[provinceFilter,]$region)))
+  ncats <- length(levels(droplevels(apple[provinceFilter,]$category)))
+  ggsave(filename = paste0('../output/apple_',provinceFilename,'.png'), device = 'png', dpi='print',
+         width=ifelse(ncats==3,4,1.5), height=nregions*1.5 + 0.5, units='in', scale=1.5);
 }

@@ -64,7 +64,7 @@ href="https://github.com/drpritch/covid-mobility-canada">GitHub</a>.</p>
 <ul id="regionSelect" class="segmented-control">
   <li><input type="radio" name="regionSelect" value="canada" id="rad_canada" checked />
     <label for="rad_canada">Canada</label></li>
-  <li><input type="radio" name="regionSelect" value="canada" id="rad_bc" />
+  <li><input type="radio" name="regionSelect" value="bc" id="rad_bc" />
   <label for="rad_bc">British&nbsp;Columbia</label></li>
   <li><input type="radio" name="regionSelect" value="alberta" id="rad_alberta" />
   <label for="rad_alberta">Alberta</label></li>
@@ -87,7 +87,6 @@ href="https://github.com/drpritch/covid-mobility-canada">GitHub</a>.</p>
 
 <p style="line-height: 0em">
 <img src="output/apple_canada.png" id="appleGraph" width="100%" /><br/>
-<img src="output/apple_calgary.png" id="appleGraph2" width="100%" style="display:none" /><br/>
 <img src="output/google_canada.png" id="googleGraph" width="100%"/>
 </p>
 
@@ -218,29 +217,9 @@ Ontario hospital admissions combined with symptom keywords</li>
 </div>
 <script>
   setRegion = function(regionName) {
-    var cityLUT1 = {
-      'canada': 'canada',
-      'bc': 'vancouver',
-      'alberta': 'edmonton',
-      'ontario': 'toronto',
-      'quebec': 'montreal',
-      'novascotia': 'halifax'
-    };
-    var cityLUT2 = {
-      'alberta': 'calgary',
-      'ontario': 'ottawa'
-    };
-    var city1 = cityLUT1[regionName], city2 = cityLUT2[regionName];
-    window.appleGraph.style.display = 'none';
-    if (city1 !== undefined) {
-      window.appleGraph.style.display = 'block';
-      window.appleGraph.src = 'output/apple_' + city1 + ".png";
-    }
-    window.appleGraph2.style.display = 'none';
-    if (city2 !== undefined) {
-      window.appleGraph2.style.display = 'block';
-      window.appleGraph2.src = 'output/apple_' + city2 + ".png";
-    }
+    window.appleGraph.src = "output/apple_" + regionName + ".png";
+    window.appleGraph.style.width = (regionName == 'saskatchewan' || regionName=='manitoba' ||
+      regionName=='newbrunswick' || regionName=='newfoundland') ? '39%' : '100%';
     window.googleGraph.src = "output/google_" + regionName + ".png";
   }
 
