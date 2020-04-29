@@ -283,5 +283,5 @@ for (province in levels(apple$province)) {
   nregions <- length(levels(droplevels(apple[provinceFilter,]$region)))
   ncats <- length(levels(droplevels(apple[provinceFilter,]$category)))
   ggsave(filename = paste0('../output/apple_',provinceFilename,'.png'), device = 'png', dpi='print',
-         width=ifelse(ncats==3,4,1.5), height=nregions*1.5 + 0.5, units='in', scale=1.5);
+         width=ifelse(ncats==3,4,1.5), height=nregions*1.5, units='in', scale=1.5);
 }
