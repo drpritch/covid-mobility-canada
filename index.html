@@ -3,8 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>COVID-19 &amp; Mobility Tracking for Canada</title>
+  <title>Monitoring COVID-19 Mobility for Canada</title>
 <style>
+body {
+  font-family:  -apple-system, BlinkMacSystemFont, roboto, sans-serif;
+}
 .segmented-control {
   display: flex;
   flex-flow: row wrap;
@@ -51,14 +54,17 @@
 </head>
 <body>
 <div style="max-width: 800px; margin: auto">
-<h1>COVID-19 &amp; Mobility Tracking for Canada </h1>
+<h1>Monitoring COVID-19 &amp; Mobility in Canada </h1>
 <p><i>Data last updated April 29, 2020 20:30 EDT</i></p>
 
-<p>A project by <a href="http://davidpritchard.org">David Pritchard</a> / <a
-href="https://twitter.com/drpritch2">@drpritch2</a>. Source code at <a
-href="https://github.com/drpritch/covid-mobility-canada">GitHub</a>.</p>
+<p><a href="https://twitter.com/drpritch2">@drpritch2</a> |
+<a href="https://github.com/drpritch/covid-mobility-canada">github</a> |
+<a href="http://davidpritchard.org">david pritchard</a></p>
 
-<p>Intervention: Social Distancing. Proxy Metric: Mobility</p>
+<p><b>Intervention:</b> Physical Distancing. <b>Proxy Metric:</b> Mobility Indexes.</p>
+
+<p>Coloured region shows growth/decline from March 23-29th average value, roughly the
+timeframe that Canada hit its lowest mobility level.</p>
 
 <form id="myform">
 <ul id="regionSelect" class="segmented-control">
@@ -90,7 +96,20 @@ href="https://github.com/drpritch/covid-mobility-canada">GitHub</a>.</p>
 <img src="output/google_canada.png" id="googleGraph" width="100%"/>
 </p>
 
-<p>Data sources</p>
+<p> Since early March 2020, Canadians have stayed at home and applied physical distancing
+to defend against COVID-19, to great effect in reducing the caseload. Given the
+effectiveness of physical distancing, policymakers need rapid feedback if "quarantine fatigue"
+sets in and the distancing wanes.</p>
+
+<p>This dashboard focuses on the most effective publicly available metrics for monitoring
+physical distancing in Canada.</p>
+
+<p>The most important aspect of mobility monitoring is that the tight feedback loop: with the
+fastest data sources, we can observe mobility trends within 24 hours, and it may prove to be a
+leading indicator of COVID-19 cases. In order of feedback speed, indicators are: mobility; syndromic
+surveillance; COVID test submissions; positive test results; hospitalizations; deaths.</p>
+
+<h2>Data sources</h2>
 <ul>
 <li><a href="#apple">Apple Mobility Trends</a></li>
 <li><a href="#google">Google Community Mobility Reports</a></li>
@@ -99,9 +118,6 @@ href="https://github.com/drpritch/covid-mobility-canada">GitHub</a>.</p>
 <li><a href="#citymapper">CityMapper Mobility Index</a></li>
 <li><a href="#environics">Environics Analytics</a></li>
 <li><a href="#traffic">Traffic Counts</a></li>
-</ul>
-<p>Outcome: COVID case counts</p>
-<ul>
 <li><a href="#syndromic">Syndromic Surveillance</a></li>
 </ul>
 
@@ -110,7 +126,7 @@ href="https://github.com/drpritch/covid-mobility-canada">GitHub</a>.</p>
     <li><a href="https://www.apple.com/covid19/mobility">website</a> |
         <a href="https://www.apple.com/covid19/mobility">about data</a>
     <li>Quick updates, data available within 24 hours</li>
-    <li>Metropolitan areas, but no provincial data available</li>
+    <li>Metropolitan areas, and driving data at the provincial data</li>
     <li>Intention to travel (using maps app), not measure of actual travel. Also likely biased
         towards "unusual" trips that require directions</li>
     <li>Categorized by mode, excluding bike and taxi</li>
@@ -119,14 +135,14 @@ href="https://github.com/drpritch/covid-mobility-canada">GitHub</a>.</p>
       walk mode, but no actual increase in total travel activity</li>
     <li>Additional processing done here:
     <ul>
+       <li>Rolling seven day average, centred. This smooths out day-to-day noise, and also eliminates
+day-of-week variation: every datapoint includes five weekdays and two weekend days.</li>
        <li>Rebaselining: the raw data is all relative to Mon., Jan 13,
 2020. Friday and weekend travel is quite different from Monday travel, and
-shows up as part of the fluctuation in the raw data. In the graphs here,
+shows up as part of the fluctuation in the raw data. In the point data on these graphs,
 the data has been "rebaselined": each Monday is relative to the median activity
 level for Mondays between Jan. 13 and Feb. 12, and likewise for each other
 day of the week.</li>
-       <li>Rolling seven day average. This smooths out day-to-day noise, and also eliminates
-day-of-week variation: every datapoint includes five weekdays and two weekend days.</li>
     </ul></li>
   </ul>
 
@@ -210,10 +226,12 @@ neighbourhood"</a>.</li>
 submissions or results</li>
     <li><a href="https://covidnearyou.org">covidnearyou.org</a></li>
     <li><a href="https://flatten.ca">flatten.ca</a></li>
+    <li><a href="https://covid-survey.dataforgood.fb.com">Facebook/CMU</a> equivalent, expected to reach Canada shortly.</i>
     <li><a href="https://www.kflaphi.ca/aces-pandemic-tracker/">ACES Pandemic Tracker</a>:
 Ontario hospital admissions combined with symptom keywords</li>
   </ul>
 </div>
+
 <script>
   setRegion = function(regionName) {
     window.appleGraph.src = "output/apple_" + regionName + ".png";
