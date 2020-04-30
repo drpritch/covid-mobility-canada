@@ -32,6 +32,32 @@ getMin <- function(data, minDate = as.Date('2020/03/23')) {
     }
   result
 }
+getValueLabel <- function(data, minDate = as.Date('2020/03/23')) {
+  result <- rep(NA, nrow(data));
+  # Show: minimum date, final date (at 7-day rolling center), final date minus a week
+  filter <- data$date %in% c(minDate + 3, max(data$date) - 10, max(data$date) - 3);
+  result[filter] <- round(data[filter,]$value7, 0);
+  result
+}
+signAndRound <- function(value) {
+  ifelse(value <= 0, round(value), paste0('+', round(value)))
+}
+arrowAndRound <- function(value) {
+  #  paste0(ifelse(value < 0, '~scriptstyle(▼)~', ifelse(value > 0, '~scriptstyle(▲)~', '')), abs(round(value,0)))
+  #paste0(ifelse(value < 0, "phantom(0) %down% ", ifelse(value > 0, 'phantom(0) %up% ', '')), abs(round(value,0)))
+  paste0(ifelse(value < 0, " %down% ", ifelse(value > 0, ' %up% ', '')), abs(round(value,0)))
+}
+getHeadlineLabel <- function(data, minDate = as.Date('2020/03/23'), leftDate) {
+  result <- rep(NA, nrow(data));
+  for(category in levels(data$category))
+    for(region in levels(data$region)) {
+      filter <- data$category==category & data$region==region;
+      dateFilter <- data$date %in% c(minDate + 3, max(data$date) - 10, max(data$date) - 3);
+      points <- data$value7[filter & dateFilter];
+      result[filter & data$date == leftDate] <- signAndRound(points[3]-points[1]);
+    }
+  result
+}
 
 
 # Actually: blank field = NA.
@@ -217,6 +243,8 @@ google$valueMin <- getMin(google);
 google$valueMin[google$category == 'park'] <- NA;
 google$value7_pos <- pmax(google$value7, google$valueMin);
 google$value7_neg <- pmin(google$value7, google$valueMin);
+google$valueLabel <- getValueLabel(google);
+google$headlineLabel <- getHeadlineLabel(google, leftDate='2020/03/01');
 for (region in levels(google$region)) {
   regionFilter <- google$region == region;
   regionFilename <- tolower(gsub(' ','',region));
@@ -229,6 +257,8 @@ for (region in levels(google$region)) {
       geom_ribbon(data=google[regionFilter,],
                   aes(ymin=valueMin, ymax=value7_neg), fill=blueFill, alpha=0.5, show.legend=FALSE) +
       geom_line() +
+      geom_text(aes(label=valueLabel), size=2, nudge_y = 5, color='#555555') +
+      geom_label(aes(label = headlineLabel, y = -Inf), label.size=0, hjust='left', vjust='bottom', size=3) +
       facet_wrap(~category, switch='y',
                  labeller = labeller(category=category.labs)),
     startDate = '2020/03/01',
@@ -241,6 +271,8 @@ apple$value7 <- getRolling(apple);
 apple$valueMin <- getMin(apple);
 apple$value7_pos <- pmax(apple$value7, apple$valueMin);
 apple$value7_neg <- pmin(apple$value7, apple$valueMin);
+apple$valueLabel <- getValueLabel(apple);
+apple$headlineLabel <- getHeadlineLabel(apple, leftDate='2020/03/01');
 
 region.labs2 <- levels(apple$region);
 region.labs2[c(3,5)] <- c('Vancouv', 'Edmont');
@@ -279,6 +311,8 @@ for (province in levels(apple$province)) {
       geom_ribbon(data=apple[provinceFilter,],
                   aes(ymin=valueMin, ymax=value7_neg), fill=blueFill, alpha=0.5, show.legend=FALSE) +
       geom_line() +
+      geom_text(aes(label=valueLabel), size=2, nudge_y = 5, color='#555555') +
+      geom_label(aes(label = headlineLabel, y = -Inf), label.size=0, hjust='left', vjust='bottom', size=5) +
       facet_grid(rows=vars(region), cols=vars(category), switch='y'),
     startDate = '2020/03/01',
     isGoogle = FALSE, isDouble=TRUE);
