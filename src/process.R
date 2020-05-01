@@ -56,8 +56,7 @@ getHeadlineLabel <- function(data, startDate, minDate = as.Date('2020/03/23'), u
       points <- data$value7[filter & dateFilter];
       result[filter & data$date == startDate] <- paste0(
         signAndRound(points[3]-points[1]),
-    #    '~from~Mar.~23');
-        ifelse(useTiny,'~scriptscriptstyle(from~Mar~23)','~from~Mar~23'))
+        ifelse(useTiny,'~scriptscriptstyle(from~Mar~27)','~from~Mar~27'))
     }
   result
 }
@@ -244,11 +243,13 @@ ggsave(filename = '../output/google_post.png', device = 'png', dpi='print',
 
 googleHeadlineTiny <- Sys.Date() - max(google$date) > 6;
 google$valueMin <- getMin(google);
-google$valueMin[google$category == 'park'] <- NA;
+#google$valueMin[google$category == 'park'] <- NA;
 google$value7_pos <- pmax(google$value7, google$valueMin);
 google$value7_neg <- pmin(google$value7, google$valueMin);
 google$valueLabel <- getValueLabel(google);
-google$headlineLabel <- getHeadlineLabel(google, startDate='2020/03/01', useTiny=!googleHeadlineTiny);
+google$headlineLabel <- getHeadlineLabel(google, startDate='2020/03/01',
+      # If headline is big, made the suffix tiny                                   
+      useTiny=!googleHeadlineTiny);
 for (region in levels(google$region)) {
   regionFilter <- google$region == region;
   regionFilename <- tolower(gsub(' ','',region));
