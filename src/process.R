@@ -33,7 +33,9 @@ getRolling <- function(data) {
   for(category in levels(data$category))
     for(region in levels(data$region)) {
       filter <- data$category == category & data$region == region;
-      result[filter] <- rollmean(data[filter,]$value, 7, fill=NA, align='center');
+      # New Brunswick has a number of Saturday transit datapoints that are NA.
+      result[filter] <- rollapply(data[filter,]$value, 7, function(x) { mean(x, na.rm=TRUE) },
+                                  fill=NA, align='center');
     }
   result
 }
@@ -112,7 +114,6 @@ google <- do.call('rbind', lapply(6:11, function(col) {
 google$value[google$value=='NA'] <- NA;
 categoryOrder <- c('work', 'transit', 'grocery', 'retail', 'res', 'park');
 google$category <- fct_relevel(google$category, categoryOrder);
-
 google <- droplevels(google);
 
 #google$category_daytype <- with(google, interaction(google$daytype, google$category));
