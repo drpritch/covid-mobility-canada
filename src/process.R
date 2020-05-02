@@ -4,6 +4,23 @@ library('tidyr');
 library('zoo');   # for rollmean
 library('RColorBrewer');
 
+provinceOrder <-
+  c('Canada','BC', 'Alberta', 'Saskatchewan', 'Manitoba',
+    'Ontario', 'Quebec',
+    #    'PEI',
+    'New Brunswick', 'Nova Scotia', 'Newfoundland'
+    #    'Yukon', 'NWT', 'Nunavut'
+  );
+cityToProvince <- c(Vancouver = 'BC', Edmonton = 'Alberta', Calgary = 'Alberta',
+  Toronto = 'Ontario', Ottawa = 'Ontario', Montreal = 'Quebec', Halifax = 'Nova Scotia');
+
+# First day of the lowest week post-covid lockdown.
+minDateRegion <- rep(as.Date('2020/03/30'), length(provinceOrder));
+names(minDateRegion) <- provinceOrder;
+minDateRegion[c('BC','Ontario','Nova Scotia','Newfoundland')] <- as.Date('2020/03/23');
+for (city in names(cityToProvince))
+  minDateRegion[city] <- minDateRegion[cityToProvince[city]];
+
 getDaytype <- function(dates) {
   result <- weekdays(dates) %in% c('Saturday','Sunday');
   result <- factor(result, levels = c(FALSE, TRUE), labels = c('Weekday','Weekend/Holiday'));
@@ -20,22 +37,25 @@ getRolling <- function(data) {
     }
   result
 }
-getMin <- function(data, minDate = as.Date('2020/03/23')) {
+getMin <- function(data) {
   result <- rep(NA, nrow(data));
   for(category in levels(data$category))
     for(region in levels(data$region)) {
       filter <- data$category==category &  data$region==region &
-        data$date>=minDate +3;
+        data$date>=minDateRegion[region] +3;
       # Using value7 with date+3 gives 7-day average from 3/23-3/29
       # Deliberately leave everything before date threshold as NA
       result[filter] <- data[filter,]$value7[1];
     }
   result
 }
-getValueLabel <- function(data, minDate = as.Date('2020/03/23')) {
+getValueLabel <- function(data, minDate) {
   result <- rep(NA, nrow(data));
   # Show: minimum date, final date (at 7-day rolling center), final date minus a week
-  filter <- data$date %in% c(minDate + 3, max(data$date) - 10, max(data$date) - 3);
+  filter <- data$date %in% c(max(data$date) - 10, max(data$date) - 3);
+  for(region in levels(data$region)) {
+    filter[data$region==region & data$date==minDateRegion[region]] <- TRUE;
+  }
   result[filter] <- round(data[filter,]$value7, 0);
   result
 }
@@ -47,16 +67,18 @@ arrowAndRound <- function(value) {
   #paste0(ifelse(value < 0, "phantom(0) %down% ", ifelse(value > 0, 'phantom(0) %up% ', '')), abs(round(value,0)))
   paste0(ifelse(value < 0, " %down% ", ifelse(value > 0, ' %up% ', '')), abs(round(value,0)))
 }
-getHeadlineLabel <- function(data, startDate, minDate = as.Date('2020/03/23'), useTiny = TRUE) {
+getHeadlineLabel <- function(data, startDate, useTiny = TRUE) {
   result <- rep(NA, nrow(data));
   for(category in levels(data$category))
     for(region in levels(data$region)) {
+      minDate <- minDateRegion[region] + 3;
+      minDatePlotMath <- format.Date(minDate, '%b~%d');
       filter <- data$category==category & data$region==region;
-      dateFilter <- data$date %in% c(minDate + 3, max(data$date) - 10, max(data$date) - 3);
+      dateFilter <- data$date %in% c(minDate, max(data$date) - 10, max(data$date) - 3);
       points <- data$value7[filter & dateFilter];
       result[filter & data$date == startDate] <- paste0(
         signAndRound(points[3]-points[1]),
-        ifelse(useTiny,'~scriptscriptstyle(from~Mar~27)','~from~Mar~27'))
+        ifelse(useTiny,'~scriptscriptstyle(',''), 'from~', minDatePlotMath, ifelse(useTiny, ')',''))
     }
   result
 }
@@ -72,13 +94,6 @@ google$region <- fct_recode(google$region,
     PEI='Prince Edward Island',
     Newfoundland='Newfoundland and Labrador',
     NWT='Northwest Territories'
-);
-provinceOrder <-
-  c('Canada','BC', 'Alberta', 'Saskatchewan', 'Manitoba',
-    'Ontario', 'Quebec',
-    #    'PEI',
-    'New Brunswick', 'Nova Scotia', 'Newfoundland'
-    #    'Yukon', 'NWT', 'Nunavut'
 );
 google$region <- fct_relevel(google$region, provinceOrder);
 # TODO: deal with provinces with NA data.
