@@ -80,7 +80,7 @@ getHeadlineLabel <- function(data, startDate, useTiny = TRUE) {
       points <- data$value7[filter & dateFilter];
       result[filter & data$date == startDate] <- paste0(
         signAndRound(points[3]-points[1]),
-        ifelse(useTiny,'~scriptscriptstyle(',''), 'from~', minDatePlotMath, ifelse(useTiny, ')',''))
+        ifelse(useTiny,'~scriptscriptstyle(','~'), 'from~', minDatePlotMath, ifelse(useTiny, ')',''))
     }
   result
 }
