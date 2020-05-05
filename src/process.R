@@ -17,7 +17,7 @@ cityToProvince <- c(Vancouver = 'BC', Edmonton = 'Alberta', Calgary = 'Alberta',
 # First day of the lowest week post-covid lockdown.
 minDateRegion <- rep(as.Date('2020/03/30'), length(provinceOrder));
 names(minDateRegion) <- provinceOrder;
-minDateRegion[c('BC','Ontario','Nova Scotia','Newfoundland')] <- as.Date('2020/03/23');
+minDateRegion[c('BC','Ontario','Newfoundland')] <- as.Date('2020/03/23');
 for (city in names(cityToProvince))
   minDateRegion[city] <- minDateRegion[cityToProvince[city]];
 
@@ -56,7 +56,7 @@ getValueLabel <- function(data, minDate) {
   # Show: minimum date, final date (at 7-day rolling center), final date minus a week
   filter <- data$date %in% c(max(data$date) - 10, max(data$date) - 3);
   for(region in levels(data$region)) {
-    filter[data$region==region & data$date==minDateRegion[region]] <- TRUE;
+    filter[data$region==region & data$date==minDateRegion[region] + 3] <- TRUE;
   }
   result[filter] <- round(data[filter,]$value7, 0);
   result
