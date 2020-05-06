@@ -356,6 +356,7 @@ appleBigCities <- aggregate(value7_urbWt~date+category, apple[apple$region %in% 
 appleBigCities$region <- 'BigCities';
 colnames(appleBigCities)[3] <- 'value7';
 appleBigCities<- rbind(appleBigCities, data.frame(apple[apple$region=='Canada',c('date','category','value7','region')]));
+nonCityPopulation <- canadaPopulation - sum(cityPopulation);
 appleBigCities$value7_rurWt <- ifelse(appleBigCities$region=='Canada',canadaPopulation / nonCityPopulation,-sum(cityPopulation) / nonCityPopulation) * appleBigCities$value7;
 appleNonCities <- aggregate(value7_rurWt ~ date + category, appleBigCities, sum);
 appleNonCities$region <- 'SmallCitiesRural';
