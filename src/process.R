@@ -13,6 +13,11 @@ provinceOrder <-
   );
 cityToProvince <- c(Vancouver = 'BC', Edmonton = 'Alberta', Calgary = 'Alberta',
   Toronto = 'Ontario', Ottawa = 'Ontario', Montreal = 'Quebec', Halifax = 'Nova Scotia');
+# 2019 populations, StatsCan table 17-10-0135-01
+# Ottawa: both Ontario and Quebec parts used
+cityPopulation <- c(Vancouver=2691351, Edmonton=1447143, Calgary=1514723,
+  Toronto=6471850, Ottawa=1441118, Montreal=4318505, Halifax=440348);
+canadaPopulation <- 31484234;
 
 # First day of the lowest week post-covid lockdown.
 minDateRegion <- rep(as.Date('2020/03/30'), length(provinceOrder));
@@ -140,6 +145,7 @@ apple$region <- fct_recode(apple$region,
                            NWT='Northwest Territories');
 apple <- apple[apple$region%in% regionOrder,];
 apple$region <- fct_relevel(apple$region, regionOrder);
+names(cityPopulation) <- factor(names(cityPopulation), levels=regionOrder);
 apple$province <- apple$region;
 apple$province[apple$region=='Vancouver'] <- 'BC';
 apple$province[apple$region %in% c('Edmonton', 'Calgary')] <- 'Alberta';
@@ -344,3 +350,19 @@ for (province in levels(apple$province)) {
   ggsave(filename = paste0('../output/apple_',provinceFilename,'.png'), device = 'png', dpi='print',
          width=ifelse(ncats==3,4,1.5), height=nregions*1.2 + 0.4, units='in', scale=1.5);
 }
+
+apple$value7_urbWt <- apple$value7 * cityPopulation[match(apple$region, names(cityPopulation))] / sum(cityPopulation);
+appleBigCities <- aggregate(value7_urbWt~date+category, apple[apple$region %in% names(cityPopulation),], sum);
+appleBigCities$region <- 'BigCities';
+colnames(appleBigCities)[3] <- 'value7';
+appleBigCities<- rbind(appleBigCities, data.frame(apple[apple$region=='Canada',c('date','category','value7','region')]));
+appleBigCities$value7_rurWt <- ifelse(appleBigCities$region=='Canada',canadaPopulation / nonCityPopulation,-sum(cityPopulation) / nonCityPopulation) * appleBigCities$value7;
+appleNonCities <- aggregate(value7_rurWt ~ date + category, appleBigCities, sum);
+appleNonCities$region <- 'SmallCitiesRural';
+colnames(appleNonCities)[3] <- 'value7';
+appleBigCities$value7_rurWt <- NULL;
+appleBigCities <- rbind(appleBigCities, appleNonCities);
+#ggplot(appleBigCities, aes(y=value7, x=date)) + geom_line(aes(color=region)) + facet_grid(row=vars(category))
+#ggplot(apple[apple$category=='driving' & !apple$region %in% names(cityPopulation),], aes(y=value7, x=date)) + geom_line(aes(color=region))
+#ggplot(apple[apple$region %in% names(cityPopulation),], aes(y=value7, x=date)) + geom_line(aes(color=region)) + facet_grid(rows=vars(category))
+
