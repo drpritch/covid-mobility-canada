@@ -148,7 +148,7 @@ apple$region <- fct_recode(apple$region,
                            NWT='Northwest Territories');
 apple <- apple[apple$region%in% regionOrder,];
 apple$region <- fct_relevel(apple$region, regionOrder);
-names(cityPopulation) <- factor(names(cityPopulation), levels=regionOrder);
+names(regionPopulation) <- factor(names(regionPopulation), levels=regionOrder);
 apple$province <- apple$region;
 apple$province[apple$region=='Vancouver'] <- 'BC';
 apple$province[apple$region %in% c('Edmonton', 'Calgary')] <- 'Alberta';
@@ -197,7 +197,7 @@ for (region in levels(apple$region)) {
 ########################################################################################
 # Plotting
 
-setupPlot <- function(p, startDate = '2020/03/01', isGoogle = TRUE, isDouble=FALSE, dateSpacing = '1 week', regionName=NULL) {
+setupPlot <- function(p, startDate = '2020/03/01', isGoogle = TRUE, isDouble=FALSE, dateSpacing = '1 week', regionName=NULL,palette='Set1') {
   isApple <- !isGoogle;
   isTop <- ifelse(isDouble, isApple, TRUE);
   isBottom <- ifelse(isDouble, isGoogle, TRUE);
@@ -209,14 +209,16 @@ setupPlot <- function(p, startDate = '2020/03/01', isGoogle = TRUE, isDouble=FAL
   else if(isGoogle) {
     ylim <- c(-90, NA);
   }
+  if(palette=='Set1') {
+    p <- p + theme_light();
+  }
   result <- p +
-    theme_light() +
     scale_y_continuous(breaks=seq(-100,200,by=20), minor_breaks=seq(-100,200, by=10),
                        limits=ylim,
                        name=ifelse(isGoogle, "Google Community Mobility Index", "Apple Mobility Index")) +
     scale_x_date(date_breaks = dateSpacing, date_labels='%b %d',
                  limits = c(as.Date(startDate), Sys.Date() - 1)) +
-    scale_color_brewer(palette="Set1") +
+    scale_color_brewer(palette=palette) +
     geom_hline(yintercept = 0, alpha=0.5) +
     theme(axis.title.x=element_blank(), axis.text.x = element_text(angle = 90)) +
     labs(x="", color="");
@@ -405,6 +407,10 @@ appleCityRural <- rbind(
   extractCityRural(apple, 'Nova Scotia', c('Halifax')),
   extractCityRural(apple, 'Newfoundland', c())
 );
-#ggplot(appleCityRural, aes(y=value7, x=date)) + geom_line(aes(color=region)) + facet_grid(row=vars(category), col=vars(cityRural))
+appleCityRural$region <- fct_relevel(appleCityRural$region, regionOrder);
+setupPlot(
+  ggplot(appleCityRural, aes(y=value7, x=date)) + geom_line(aes(color=region)) + facet_grid(row=vars(category), col=vars(cityRural)),
+  palette='Spectral'
+);
 #ggplot(appleCityRural, aes(y=value7, x=date)) + geom_line(aes(color=cityRural)) + facet_grid(row=vars(category), col=vars(region))
 
