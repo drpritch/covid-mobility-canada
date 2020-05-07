@@ -13,11 +13,14 @@ provinceOrder <-
   );
 cityToProvince <- c(Vancouver = 'BC', Edmonton = 'Alberta', Calgary = 'Alberta',
   Toronto = 'Ontario', Ottawa = 'Ontario', Montreal = 'Quebec', Halifax = 'Nova Scotia');
-# 2019 populations, StatsCan table 17-10-0135-01
+# July 1 2019 populations, StatsCan table 17-10-0009-01 and 17-10-0135-01
 # Ottawa: both Ontario and Quebec parts used
-cityPopulation <- c(Vancouver=2691351, Edmonton=1447143, Calgary=1514723,
+regionPopulation <- c(
+  Canada = 37589262,
+  BC=5071336, Alberta=4371316, Ontario=14566547, Quebec=8484965, NovaScotia=971395,
+  Vancouver=2691351, Edmonton=1447143, Calgary=1514723,
   Toronto=6471850, Ottawa=1441118, Montreal=4318505, Halifax=440348);
-canadaPopulation <- 31484234;
+names(regionPopulation)[6] <- 'Nova Scotia';
 
 # First day of the lowest week post-covid lockdown.
 minDateRegion <- rep(as.Date('2020/03/30'), length(provinceOrder));
@@ -351,19 +354,57 @@ for (province in levels(apple$province)) {
          width=ifelse(ncats==3,4,1.5), height=nregions*1.2 + 0.4, units='in', scale=1.5);
 }
 
-apple$value7_urbWt <- apple$value7 * cityPopulation[match(apple$region, names(cityPopulation))] / sum(cityPopulation);
-appleBigCities <- aggregate(value7_urbWt~date+category, apple[apple$region %in% names(cityPopulation),], sum);
-appleBigCities$region <- 'BigCities';
-colnames(appleBigCities)[3] <- 'value7';
-appleBigCities<- rbind(appleBigCities, data.frame(apple[apple$region=='Canada',c('date','category','value7','region')]));
-nonCityPopulation <- canadaPopulation - sum(cityPopulation);
-appleBigCities$value7_rurWt <- ifelse(appleBigCities$region=='Canada',canadaPopulation / nonCityPopulation,-sum(cityPopulation) / nonCityPopulation) * appleBigCities$value7;
-appleNonCities <- aggregate(value7_rurWt ~ date + category, appleBigCities, sum);
-appleNonCities$region <- 'SmallCitiesRural';
-colnames(appleNonCities)[3] <- 'value7';
-appleBigCities$value7_rurWt <- NULL;
-appleBigCities <- rbind(appleBigCities, appleNonCities);
-#ggplot(appleBigCities, aes(y=value7, x=date)) + geom_line(aes(color=region)) + facet_grid(row=vars(category))
-#ggplot(apple[apple$category=='driving' & !apple$region %in% names(cityPopulation),], aes(y=value7, x=date)) + geom_line(aes(color=region))
-#ggplot(apple[apple$region %in% names(cityPopulation),], aes(y=value7, x=date)) + geom_line(aes(color=region)) + facet_grid(rows=vars(category))
+extractCityRural <- function(apple, region, regionCityNames) {
+  parentRegionDF <- data.frame(apple[apple$region==region, c('date','category','value7','region')]);
+  parentRegionDF$cityRural <- 'all';
+  parentRegionPopulation <- regionPopulation[match(region, names(regionPopulation))];
+  if (length(regionCityNames) > 0) {
+    # Just pops of cities within the region
+    regionCityPopulation <- regionPopulation[match(regionCityNames, names(regionPopulation))];
+    apple$value7_urbWt <- apple$value7 * regionCityPopulation[match(apple$region, names(regionCityPopulation))] / sum(regionCityPopulation);
+    bigCities <- aggregate(value7_urbWt~date+category, apple[apple$region %in% names(cityToProvince),], sum);
+    bigCities$region <- region;
+    bigCities$cityRural <- 'bigcities';
+    colnames(bigCities)[3] <- 'value7';
+
+    smallCitiesRuralPopulation <- parentRegionPopulation - sum(regionCityPopulation);
+    print(parentRegionPopulation);
+    print(sum(regionCityPopulation));
+    print(smallCitiesRuralPopulation);
+
+    bigCities$value7_rurWt <- -sum(regionCityPopulation) / smallCitiesRuralPopulation;
+    parentRegionDF$value7_rurWt <- parentRegionPopulation / smallCitiesRuralPopulation;
+    bigCities <- rbind(bigCities, parentRegionDF);
+    bigCities$value7_rurWt <- bigCities$value7 * bigCities$value7_rurWt;
+
+    print(bigCities[bigCities$date>=Sys.Date()-10,]);
+    smallCitiesRural <- aggregate(value7_rurWt ~ date + category, bigCities, sum);
+    smallCitiesRural$region <- region;
+    smallCitiesRural$cityRural <- 'smallcitiesrural';
+    colnames(smallCitiesRural)[3] <- 'value7';
+    bigCities$value7_rurWt <- NULL;
+    result <- rbind(bigCities, smallCitiesRural);
+    if(region!='Canada')
+      result <- result[result$cityRural == 'bigcities' | result$category=='driving',];
+  } else {
+    smallCitiesRural <- parentRegionDF;
+    smallCitiesRural$cityRural <- 'smallcitiesrural';
+    result <- rbind(parentRegionDF, smallCitiesRural);
+  }
+  result;
+}
+appleCityRural <- rbind(
+  extractCityRural(apple, 'Canada', names(cityToProvince)),
+  extractCityRural(apple, 'BC', c('Vancouver')),
+  extractCityRural(apple, 'Alberta', c('Edmonton','Calgary')),
+  extractCityRural(apple, 'Ontario', c('Toronto', 'Ottawa')),
+  extractCityRural(apple, 'Manitoba', c()),
+  extractCityRural(apple, 'Saskatchewan', c()),
+  extractCityRural(apple, 'Quebec', c('Montreal')),
+  extractCityRural(apple, 'New Brunswick', c()),
+  extractCityRural(apple, 'Nova Scotia', c('Halifax')),
+  extractCityRural(apple, 'Newfoundland', c())
+);
+#ggplot(appleCityRural, aes(y=value7, x=date)) + geom_line(aes(color=region)) + facet_grid(row=vars(category), col=vars(cityRural))
+#ggplot(appleCityRural, aes(y=value7, x=date)) + geom_line(aes(color=cityRural)) + facet_grid(row=vars(category), col=vars(region))
 
