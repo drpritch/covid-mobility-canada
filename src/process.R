@@ -223,7 +223,7 @@ setupPlot <- function(p, startDate = '2020/03/01', isGoogle = TRUE, isDouble=FAL
     theme(axis.title.x=element_blank(), axis.text.x = element_text(angle = 90)) +
     labs(x="", color="");
   if (isBottom)
-    result <- result + labs(caption=ifelse(isDouble, ifelse(isGoogle, "Apple data rebaselined similar to Google. Rolling 7 day average.\ndrpritch.gitub.io/covid-mobility-canada", ""),
+    result <- result + labs(caption=ifelse(isDouble, ifelse(isGoogle, "Apple data rebaselined similar to Google. Rolling 7 day average.\ndrpritch.github.io/covid-mobility-canada", ""),
                      ifelse(isGoogle, "Rolling 7 day average. drpritch.github.io/covid-mobility-canada",
                             "Rebaselined similar to Google data. Rolling 7 day average. drpritch.githib.io/covid-mobility-canada")));
   result;
