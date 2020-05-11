@@ -17,10 +17,9 @@ cityToProvince <- c(Vancouver = 'BC', Edmonton = 'Alberta', Calgary = 'Alberta',
 # Ottawa: both Ontario and Quebec parts used
 regionPopulation <- c(
   Canada = 37589262,
-  BC=5071336, Alberta=4371316, Ontario=14566547, Quebec=8484965, NovaScotia=971395,
+  BC=5071336, Alberta=4371316, Ontario=14566547, Quebec=8484965, 'Nova Scotia'=971395,
   Vancouver=2691351, Edmonton=1447143, Calgary=1514723,
   Toronto=6471850, Ottawa=1441118, Montreal=4318505, Halifax=440348);
-names(regionPopulation)[6] <- 'Nova Scotia';
 
 # First day of the lowest week post-covid lockdown.
 minDateRegion <- rep(as.Date('2020/03/30'), length(provinceOrder));
@@ -209,23 +208,25 @@ setupPlot <- function(p, startDate = '2020/03/01', isGoogle = TRUE, isDouble=FAL
   else if(isGoogle) {
     ylim <- c(-90, NA);
   }
-  if(palette=='Set1') {
-    p <- p + theme_light();
-  }
   result <- p +
+    theme_light() +
     scale_y_continuous(breaks=seq(-100,200,by=20), minor_breaks=seq(-100,200, by=10),
                        limits=ylim,
                        name=ifelse(isGoogle, "Google Community Mobility Index", "Apple Mobility Index")) +
     scale_x_date(date_breaks = dateSpacing, date_labels='%b %d',
                  limits = c(as.Date(startDate), Sys.Date() - 1)) +
-    scale_color_brewer(palette=palette) +
     geom_hline(yintercept = 0, alpha=0.5) +
-    theme(axis.title.x=element_blank(), axis.text.x = element_text(angle = 90)) +
-    labs(x="", color="");
-  if (isBottom)
+    theme(axis.title.x=element_blank(), axis.text.x = element_text(angle = 90));
+  if(palette=='Set1') {
+    result <- result +
+      scale_color_brewer(palette=palette) +
+      labs(x="", color="");
+  }
+  if (isBottom) {
     result <- result + labs(caption=ifelse(isDouble, ifelse(isGoogle, "Apple data rebaselined similar to Google. Rolling 7 day average.\ndrpritch.github.io/covid-mobility-canada", ""),
                      ifelse(isGoogle, "Rolling 7 day average. drpritch.github.io/covid-mobility-canada",
                             "Rebaselined similar to Google data. Rolling 7 day average. drpritch.githib.io/covid-mobility-canada")));
+  }
   result;
 }
 redFill <- brewer.pal(n=8, 'Set1')[1];
@@ -239,7 +240,8 @@ names(region.labs2) = levels(google$region);
 category.labs = c('Workplace', 'Transit Stations', 'Grocery & Phar', 'Retail & Recreat', 'Residential', 'Park');
 names(category.labs) = levels(google$category);
 category.labs2 = c('Workplace', 'Transit Stations', 'Grocery & Pharmacy', 'Retail & Recreation', 'Residential', 'Park');
-names(category.labs2) = levels(google$category);google$value7 <- getRolling(google);
+names(category.labs2) = levels(google$category);
+google$value7 <- getRolling(google);
 
 setupPlot(
   ggplot(google, aes(y=value7, x=date)) +
@@ -407,10 +409,41 @@ appleCityRural <- rbind(
   extractCityRural(apple, 'Nova Scotia', c('Halifax')),
   extractCityRural(apple, 'Newfoundland', c())
 );
+provinceGroupDef <- factor(c(
+  BC='West', Alberta='West', Saskatchewan = 'West', Manitoba = 'West',
+  Ontario='Central', Quebec='Central',
+  'New Brunswick' = 'Maritimes', 'Nova Scotia' = 'Maritimes', Newfoundland = 'Maritimes',
+  Canada='Canada'
+));
+provinceGroupDef <- fct_relevel(provinceGroupDef, c('West','Central','Maritimes','Canada'));
 appleCityRural$region <- fct_relevel(appleCityRural$region, regionOrder);
+provinceGroupColours <- brewer.pal(n=8, 'Set1')[1:4];
+names(provinceGroupColours) <- levels(provinceGroupDef);
+appleCityRural$provinceGroup <- provinceGroupDef[match(appleCityRural$region, names(provinceGroupDef))];
+#appleCityRural$provinceGroupColour <- provinceGroupColours[appleCityRural$provinceGroup];
+provinceColours <- provinceGroupColours[provinceGroupDef[match(levels(appleCityRural$region), names(provinceGroupDef))]];
+names(provinceColours) <- levels(appleCityRural$region);
+
+hsvMultValue <- function(c, vMult) {
+  cHsv <- rgb2hsv(col2rgb(c));
+  hsv(cHsv[1], cHsv[2], cHsv[3] * vMult)
+}
+provinceColours[3] <- hsvMultValue(provinceColours[2], 0.8)
+provinceColours[4] <- hsvMultValue(provinceColours[2], 0.6)
+provinceColours[5] <- hsvMultValue(provinceColours[2], 0.4)
+provinceColours[7] <- hsvMultValue(provinceColours[6], 0.8)
+provinceColours[9] <- hsvMultValue(provinceColours[8], 0.8)
+provinceColours[10] <- hsvMultValue(provinceColours[8], 0.6)
+
+cityRural.labs = c(all='Full Province', bigcities='Major Cities', smallcitiesrural='Small Cities / Rural');
 setupPlot(
-  ggplot(appleCityRural, aes(y=value7, x=date)) + geom_line(aes(color=region)) + facet_grid(row=vars(category), col=vars(cityRural)),
-  palette='Spectral'
+  ggplot(appleCityRural[appleCityRural$category=='driving' & appleCityRural$cityRural != 'all' & appleCityRural$region != 'Canada',],
+         aes(y=value7, x=date)) + geom_line(aes(color=region), size=0.5) +
+      scale_color_manual(values=provinceColours) +
+      facet_grid(row=vars(category), col=vars(cityRural), labeller = labeller(cityRural = cityRural.labs)),
+  palette = '', isGoogle=FALSE
 );
+ggsave(filename = '../output/apple_cityRural.png', device = 'png', dpi='print',
+       width=4.5, height=2, units='in', scale=1.5);
 #ggplot(appleCityRural, aes(y=value7, x=date)) + geom_line(aes(color=cityRural)) + facet_grid(row=vars(category), col=vars(region))
 
