@@ -359,42 +359,48 @@ for (province in levels(apple$province)) {
 }
 
 extractCityRural <- function(apple, region, regionCityNames) {
-  parentRegionDF <- data.frame(apple[apple$region==region, c('date','category','value7','region')]);
+  parentRegionDF <- data.frame(apple[apple$region==region, c('date','category','value','region')]);
   parentRegionDF$cityRural <- 'all';
   parentRegionPopulation <- regionPopulation[match(region, names(regionPopulation))];
   if (length(regionCityNames) > 0) {
     # Just pops of cities within the region
     regionCityPopulation <- regionPopulation[match(regionCityNames, names(regionPopulation))];
-    apple$value7_urbWt <- apple$value7 * regionCityPopulation[match(apple$region, names(regionCityPopulation))] / sum(regionCityPopulation);
-    bigCities <- aggregate(value7_urbWt~date+category, apple[apple$region %in% names(cityToProvince),], sum);
+    apple$value_urbWt <- apple$value * regionCityPopulation[match(apple$region, names(regionCityPopulation))] / sum(regionCityPopulation);
+    bigCities <- aggregate(value_urbWt~date+category, apple[apple$region %in% names(cityToProvince),], sum);
     bigCities$region <- region;
     bigCities$cityRural <- 'bigcities';
-    colnames(bigCities)[3] <- 'value7';
+    colnames(bigCities)[3] <- 'value';
 
     smallCitiesRuralPopulation <- parentRegionPopulation - sum(regionCityPopulation);
-    print(parentRegionPopulation);
-    print(sum(regionCityPopulation));
-    print(smallCitiesRuralPopulation);
 
-    bigCities$value7_rurWt <- -sum(regionCityPopulation) / smallCitiesRuralPopulation;
-    parentRegionDF$value7_rurWt <- parentRegionPopulation / smallCitiesRuralPopulation;
+    bigCities$value_rurWt <- -sum(regionCityPopulation) / smallCitiesRuralPopulation;
+    parentRegionDF$value_rurWt <- parentRegionPopulation / smallCitiesRuralPopulation;
     bigCities <- rbind(bigCities, parentRegionDF);
-    bigCities$value7_rurWt <- bigCities$value7 * bigCities$value7_rurWt;
+    bigCities$value_rurWt <- bigCities$value * bigCities$value_rurWt;
 
-    print(bigCities[bigCities$date>=Sys.Date()-10,]);
-    smallCitiesRural <- aggregate(value7_rurWt ~ date + category, bigCities, sum);
+    smallCitiesRural <- aggregate(value_rurWt ~ date + category, bigCities, sum);
     smallCitiesRural$region <- region;
     smallCitiesRural$cityRural <- 'smallcitiesrural';
-    colnames(smallCitiesRural)[3] <- 'value7';
-    bigCities$value7_rurWt <- NULL;
+    colnames(smallCitiesRural)[3] <- 'value';
+    bigCities$value_rurWt <- NULL;
     result <- rbind(bigCities, smallCitiesRural);
-    if(region!='Canada')
+    if(region!='Canada') {
       result <- result[result$cityRural == 'bigcities' | result$category=='driving',];
+    }
   } else {
     smallCitiesRural <- parentRegionDF;
     smallCitiesRural$cityRural <- 'smallcitiesrural';
     result <- rbind(parentRegionDF, smallCitiesRural);
   }
+  result$cityRural <- fct_relevel(result$cityRural, c('all','bigcities','smallcitiesrural'));
+  # clone of getRolling, with cityRural instead of region
+  result$value7 <- rep(NA, nrow(result));
+  for(category in levels(result$category))
+    for(cityRural in levels(result$cityRural)) {
+        filter <- result$category == category & result$cityRural == cityRural;
+        result$value7[filter] <- rollapply(result[filter,]$value, 7, function(x) { mean(x, na.rm=TRUE) },
+                                           fill=NA, align='center');
+      }
   result;
 }
 appleCityRural <- rbind(
@@ -436,10 +442,13 @@ provinceColours[9] <- hsvMultValue(provinceColours[8], 0.8)
 provinceColours[10] <- hsvMultValue(provinceColours[8], 0.6)
 
 cityRural.labs = c(all='Full Province', bigcities='Major Cities', smallcitiesrural='Small Cities / Rural');
+appleCityRural$valueLabel <- getValueLabel(appleCityRural);
 setupPlot(
   ggplot(appleCityRural[appleCityRural$category=='driving' & appleCityRural$cityRural != 'all' & appleCityRural$region != 'Canada',],
          aes(y=value7, x=date)) + geom_line(aes(color=region), size=0.5) +
-      scale_color_manual(values=provinceColours) +
+#    geom_point(aes(y=value, color=region), size=0.25, alpha=0.2) +
+    scale_color_manual(values=provinceColours) +
+    #      geom_text(aes(label=valueLabel), size=2, nudge_y = 2, color='#555555') +
       facet_grid(row=vars(category), col=vars(cityRural), labeller = labeller(cityRural = cityRural.labs)),
   palette = '', isGoogle=FALSE
 );
