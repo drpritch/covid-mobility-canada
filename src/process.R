@@ -255,20 +255,6 @@ ggsave(filename = '../output/google_all.png', device = 'png', dpi='print',
        width=6.5, height=5.5, units='in', scale=1.5
 );
 
-setupPlot(
-  ggplot(google[google$date>=as.Date("2020-03-23") - 7,], aes(y=value, x=date)) +
-    ggtitle(paste0("Mobility in Canada After Lockdown Low (as of ", format.Date(max(google$date), "%b %d"), ")")) +
-    geom_point(size=0.5, alpha=0.2) +
-    geom_line(aes(y=value7)) +
-    facet_grid(rows=vars(category), cols=vars(region), scales='free_y', switch='y',
-               labeller = labeller(region = region.labs2, category=category.labs2)),
-  startDate = '2020/03/22',
-  isGoogle = TRUE);
-# Deliberately narrower, to exaggerate slopes.
-ggsave(filename = '../output/google_post.png', device = 'png', dpi='print',
-       width=4, height=5.5, units='in', scale=2.0
-);
-
 
 googleHeadlineTiny <- Sys.Date() - max(google$date) > 6;
 google$valueMin <- getMin(google);
@@ -322,18 +308,6 @@ setupPlot(
   isGoogle=FALSE, dateSpacing = '2 weeks');
 ggsave(filename = '../output/apple_all.png', device = 'png', dpi='print',
    width=12, height=4, units='in', scale=1.5
-);
-setupPlot(
-  ggplot(apple[apple$date>=as.Date("2020-03-23") - 7,], aes(y=value, x=date)) +
-    ggtitle(paste0("Mobility in Canada After Lockdown Low (as of ", format.Date(max(apple$date), "%b %d"), ")")) +
-    geom_point(size=0.5, alpha=0.2) +
-    geom_line(aes(y=value7)) +
-    facet_grid(rows=vars(category), cols=vars(region), scales='free_y', switch='y',
-               labeller = labeller(region = region.labs2)),
-  startDate='2020/03/22',
-  isGoogle=FALSE);
-ggsave(filename = '../output/apple_post.png', device = 'png', dpi='print',
-   width=6, height=4, units='in', scale=2.0
 );
 for (province in levels(apple$province)) {
   provinceFilter <- apple$province == province;
@@ -423,20 +397,20 @@ provinceGroupDef <- factor(c(
 ));
 provinceGroupDef <- fct_relevel(provinceGroupDef, c('West','Central','Maritimes','Canada'));
 appleCityRural$region <- fct_relevel(appleCityRural$region, regionOrder);
-provinceGroupColours <- brewer.pal(n=8, 'Set1')[1:4];
+provinceGroupColours <- brewer.pal(n=8, 'Set2')[1:4];
 names(provinceGroupColours) <- levels(provinceGroupDef);
 appleCityRural$provinceGroup <- provinceGroupDef[match(appleCityRural$region, names(provinceGroupDef))];
 #appleCityRural$provinceGroupColour <- provinceGroupColours[appleCityRural$provinceGroup];
 provinceColours <- provinceGroupColours[provinceGroupDef[match(levels(appleCityRural$region), names(provinceGroupDef))]];
 names(provinceColours) <- levels(appleCityRural$region);
 
-hsvMultValue <- function(c, vMult) {
+hsvMultValue <- function(c, vMult, hOffset = 0) {
   cHsv <- rgb2hsv(col2rgb(c));
-  hsv(cHsv[1], cHsv[2], cHsv[3] * vMult)
+  hsv((cHsv[1] + hOffset) %% 1, cHsv[2], cHsv[3] * vMult)
 }
-provinceColours[3] <- hsvMultValue(provinceColours[2], 0.8)
-provinceColours[4] <- hsvMultValue(provinceColours[2], 0.6)
-provinceColours[5] <- hsvMultValue(provinceColours[2], 0.4)
+provinceColours[3] <- hsvMultValue(provinceColours[2], 0.8,)
+provinceColours[4] <- hsvMultValue(provinceColours[2], 1.0, -0.1)
+provinceColours[5] <- hsvMultValue(provinceColours[2], 0.8, -0.1)
 provinceColours[7] <- hsvMultValue(provinceColours[6], 0.8)
 provinceColours[9] <- hsvMultValue(provinceColours[8], 0.8)
 provinceColours[10] <- hsvMultValue(provinceColours[8], 0.6)
@@ -445,7 +419,7 @@ cityRural.labs = c(all='Full Province', bigcities='Major Cities', smallcitiesrur
 appleCityRural$valueLabel <- getValueLabel(appleCityRural);
 setupPlot(
   ggplot(appleCityRural[appleCityRural$category=='driving' & appleCityRural$cityRural != 'all' & appleCityRural$region != 'Canada',],
-         aes(y=value7, x=date)) + geom_line(aes(color=region), size=0.5) +
+         aes(y=value7, x=date)) + geom_line(aes(color=region), size=1) +
 #    geom_point(aes(y=value, color=region), size=0.25, alpha=0.2) +
     scale_color_manual(values=provinceColours) +
     #      geom_text(aes(label=valueLabel), size=2, nudge_y = 2, color='#555555') +
