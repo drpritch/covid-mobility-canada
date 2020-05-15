@@ -4,6 +4,10 @@ library('tidyr');
 library('zoo');   # for rollmean
 library('RColorBrewer');
 
+
+# TODO: use subset and summarize throughout
+
+
 provinceOrder <-
   c('Canada','BC', 'Alberta', 'Saskatchewan', 'Manitoba',
     'Ontario', 'Quebec',
@@ -28,12 +32,6 @@ minDateRegion[c('BC','Ontario','Newfoundland')] <- as.Date('2020/03/23');
 for (city in names(cityToProvince))
   minDateRegion[city] <- minDateRegion[cityToProvince[city]];
 
-getDaytype <- function(dates) {
-  result <- weekdays(dates) %in% c('Saturday','Sunday');
-  result <- factor(result, levels = c(FALSE, TRUE), labels = c('Weekday','Weekend/Holiday'));
-  result[dates == as.Date('2020/04/10')] <- 'Weekend/Holiday';   # Good Friday
-  result
-}
 getRolling <- function(data) {
   result <- rep(NA, nrow(data));
   # TODO: must be some way to do this with a group by.
@@ -110,10 +108,9 @@ google <- google[!google$region %in% c('PEI','Yukon','NWT', 'Nunavut'),];
 
 colnames(google)[6:11] <- c('retail', 'grocery', 'park', 'transit', 'work', 'res');
 google$date <- as.Date(google$date);
-google$daytype <- getDaytype(google$date);
 # Change from all categories on one row, to one row per category.
 google <- do.call('rbind', lapply(6:11, function(col) {
-  result <- google[,c(1:5,12:ncol(google))];
+  result <- google[,c(1:5)];
   result$category <- colnames(google)[col];
   result$value <- google[,col];
   result
@@ -123,17 +120,10 @@ categoryOrder <- c('work', 'transit', 'grocery', 'retail', 'res', 'park');
 google$category <- fct_relevel(google$category, categoryOrder);
 google <- droplevels(google);
 
-#google$category_daytype <- with(google, interaction(google$daytype, google$category));
-#google$region_date <- with(google, interaction(google$date, google$region));
-
-#print(xtabs(formula = value ~ region_date + category_daytype, google)))
-
-
 
 apple <- read.csv('../input/apple.csv');
 apple <- as.data.frame(
-  apple %>%
-  tidyr::pivot_longer(cols=5:ncol(apple), names_to='date', names_prefix='X')
+  apple %>% pivot_longer(cols=5:ncol(apple), names_to='date', names_prefix='X')
 );
 apple$date <- as.Date(apple$date, "%Y.%m.%d");
 regionOrder <-
@@ -154,7 +144,6 @@ apple$province[apple$region %in% c('Edmonton', 'Calgary')] <- 'Alberta';
 apple$province[apple$region %in% c('Toronto', 'Ottawa')] <- 'Ontario';
 apple$province[apple$region == 'Montreal'] <- 'Quebec';
 apple$province[apple$region == 'Halifax'] <- 'Nova Scotia';
-apple$daytype <- getDaytype(apple$date);
 colnames(apple)[3] <- 'category'; # mode, really
 
 apple <- droplevels(apple);
@@ -191,6 +180,75 @@ for (region in levels(apple$region)) {
   }
 }
 
+extractCityRural <- function(apple, region, regionCityNames) {
+  parentRegionDF <- data.frame(apple[apple$region==region, c('date','category','value','region')]);
+  parentRegionDF$cityRural <- 'all';
+  parentRegionPopulation <- regionPopulation[match(region, names(regionPopulation))];
+  if (length(regionCityNames) > 0) {
+    # Just pops of cities within the region
+    regionCityPopulation <- regionPopulation[match(regionCityNames, names(regionPopulation))];
+    apple$value_urbWt <- apple$value * regionCityPopulation[match(apple$region, names(regionCityPopulation))] / sum(regionCityPopulation);
+    bigCities <- aggregate(value_urbWt~date+category, apple[apple$region %in% names(cityToProvince),], sum);
+    bigCities$region <- region;
+    bigCities$cityRural <- 'bigcities';
+    colnames(bigCities)[3] <- 'value';
+    
+    # TODO: need a special case for Ottawa-Gatineau, as it spans two provinces. Sigh.
+    smallCitiesRuralPopulation <- parentRegionPopulation - sum(regionCityPopulation);
+    
+    bigCities$value_rurWt <- -sum(regionCityPopulation) / smallCitiesRuralPopulation;
+    parentRegionDF$value_rurWt <- parentRegionPopulation / smallCitiesRuralPopulation;
+    bigCitiesAndParent <- rbind(bigCities, parentRegionDF);
+    bigCitiesAndParent$value_rurWt <- bigCitiesAndParent$value * bigCitiesAndParent$value_rurWt;
+    
+    smallCitiesRural <- aggregate(value_rurWt ~ date + category, bigCitiesAndParent, sum);
+    smallCitiesRural$region <- region;
+    smallCitiesRural$cityRural <- 'smallcitiesrural';
+    colnames(smallCitiesRural)[3] <- 'value';
+    bigCities$value_rurWt <- NULL;
+    if(region!='Canada') {
+      smallCitiesRural <- smallCitiesRural[smallCitiesRural$category=='driving',];
+      # Throw away aggregated bigCities, keep individual cities; also throw away region-level total data.
+      bigCitiesOrig <- data.frame(apple[apple$region %in% regionCityNames, c('date','category','value','region')]);
+      bigCitiesOrig$cityRural <- 'bigcity';
+      bigCities <- rbind(bigCities, bigCitiesOrig);
+    } else {
+      # region=='Canada'
+      # Keep aggregated bigCities, rbind to smallCities. Throw away Canada (all) data.
+    }
+    result <- rbind(bigCities, smallCitiesRural);
+  } else {
+    smallCitiesRural <- parentRegionDF;
+    smallCitiesRural$cityRural <- 'smallcitiesrural';
+    result <- smallCitiesRural;
+  }
+  result$province <- region;
+  result$cityRural <- fct_relevel(result$cityRural, c('bigcity', 'bigcities', 'smallcitiesrural'));
+  # clone of getRolling, with cityRural instead of region
+  result$value7 <- rep(NA, nrow(result));
+  for(category in levels(result$category))
+    for(cityRural in levels(result$cityRural)) {
+      filter <- result$category == category & result$cityRural == cityRural;
+      result$value7[filter] <- rollapply(result[filter,]$value, 7, function(x) { mean(x, na.rm=TRUE) },
+                                         fill=NA, align='center');
+    }
+  result;
+}
+
+appleCityRural <- rbind(
+  extractCityRural(apple, 'Canada', names(cityToProvince)),
+  extractCityRural(apple, 'BC', c('Vancouver')),
+  extractCityRural(apple, 'Alberta', c('Edmonton','Calgary')),
+  extractCityRural(apple, 'Ontario', c('Toronto', 'Ottawa')),
+  extractCityRural(apple, 'Manitoba', c()),
+  extractCityRural(apple, 'Saskatchewan', c()),
+  extractCityRural(apple, 'Quebec', c('Montreal')),
+  extractCityRural(apple, 'New Brunswick', c()),
+  extractCityRural(apple, 'Nova Scotia', c('Halifax')),
+  extractCityRural(apple, 'Newfoundland', c())
+);
+appleCityRural$province <- fct_relevel(appleCityRural$province, provinceOrder);
+appleCityRural$cityRural <- fct_relevel(appleCityRural$cityRural, c('bigcity', 'bigcities', 'smallcitiesrural'));
 
 
 ########################################################################################
@@ -332,63 +390,7 @@ for (province in levels(apple$province)) {
          width=ifelse(ncats==3,4,1.5), height=nregions*1.2 + 0.4, units='in', scale=1.5);
 }
 
-extractCityRural <- function(apple, region, regionCityNames) {
-  parentRegionDF <- data.frame(apple[apple$region==region, c('date','category','value','region')]);
-  parentRegionDF$cityRural <- 'all';
-  parentRegionPopulation <- regionPopulation[match(region, names(regionPopulation))];
-  if (length(regionCityNames) > 0) {
-    # Just pops of cities within the region
-    regionCityPopulation <- regionPopulation[match(regionCityNames, names(regionPopulation))];
-    apple$value_urbWt <- apple$value * regionCityPopulation[match(apple$region, names(regionCityPopulation))] / sum(regionCityPopulation);
-    bigCities <- aggregate(value_urbWt~date+category, apple[apple$region %in% names(cityToProvince),], sum);
-    bigCities$region <- region;
-    bigCities$cityRural <- 'bigcities';
-    colnames(bigCities)[3] <- 'value';
 
-    smallCitiesRuralPopulation <- parentRegionPopulation - sum(regionCityPopulation);
-
-    bigCities$value_rurWt <- -sum(regionCityPopulation) / smallCitiesRuralPopulation;
-    parentRegionDF$value_rurWt <- parentRegionPopulation / smallCitiesRuralPopulation;
-    bigCities <- rbind(bigCities, parentRegionDF);
-    bigCities$value_rurWt <- bigCities$value * bigCities$value_rurWt;
-
-    smallCitiesRural <- aggregate(value_rurWt ~ date + category, bigCities, sum);
-    smallCitiesRural$region <- region;
-    smallCitiesRural$cityRural <- 'smallcitiesrural';
-    colnames(smallCitiesRural)[3] <- 'value';
-    bigCities$value_rurWt <- NULL;
-    result <- rbind(bigCities, smallCitiesRural);
-    if(region!='Canada') {
-      result <- result[result$cityRural == 'bigcities' | result$category=='driving',];
-    }
-  } else {
-    smallCitiesRural <- parentRegionDF;
-    smallCitiesRural$cityRural <- 'smallcitiesrural';
-    result <- rbind(parentRegionDF, smallCitiesRural);
-  }
-  result$cityRural <- fct_relevel(result$cityRural, c('all','bigcities','smallcitiesrural'));
-  # clone of getRolling, with cityRural instead of region
-  result$value7 <- rep(NA, nrow(result));
-  for(category in levels(result$category))
-    for(cityRural in levels(result$cityRural)) {
-        filter <- result$category == category & result$cityRural == cityRural;
-        result$value7[filter] <- rollapply(result[filter,]$value, 7, function(x) { mean(x, na.rm=TRUE) },
-                                           fill=NA, align='center');
-      }
-  result;
-}
-appleCityRural <- rbind(
-  extractCityRural(apple, 'Canada', names(cityToProvince)),
-  extractCityRural(apple, 'BC', c('Vancouver')),
-  extractCityRural(apple, 'Alberta', c('Edmonton','Calgary')),
-  extractCityRural(apple, 'Ontario', c('Toronto', 'Ottawa')),
-  extractCityRural(apple, 'Manitoba', c()),
-  extractCityRural(apple, 'Saskatchewan', c()),
-  extractCityRural(apple, 'Quebec', c('Montreal')),
-  extractCityRural(apple, 'New Brunswick', c()),
-  extractCityRural(apple, 'Nova Scotia', c('Halifax')),
-  extractCityRural(apple, 'Newfoundland', c())
-);
 provinceGroupDef <- factor(c(
   BC='West', Alberta='West', Saskatchewan = 'West', Manitoba = 'West',
   Ontario='Central', Quebec='Central',
@@ -401,25 +403,25 @@ provinceGroupColours <- brewer.pal(n=8, 'Set2')[1:4];
 names(provinceGroupColours) <- levels(provinceGroupDef);
 appleCityRural$provinceGroup <- provinceGroupDef[match(appleCityRural$region, names(provinceGroupDef))];
 #appleCityRural$provinceGroupColour <- provinceGroupColours[appleCityRural$provinceGroup];
-provinceColours <- provinceGroupColours[provinceGroupDef[match(levels(appleCityRural$region), names(provinceGroupDef))]];
-names(provinceColours) <- levels(appleCityRural$region);
+provinceColours <- provinceGroupColours[provinceGroupDef[match(levels(appleCityRural$province), names(provinceGroupDef))]];
+names(provinceColours) <- levels(appleCityRural$province);
 
 hsvMultValue <- function(c, vMult, hOffset = 0) {
   cHsv <- rgb2hsv(col2rgb(c));
   hsv((cHsv[1] + hOffset) %% 1, cHsv[2], cHsv[3] * vMult)
 }
-provinceColours[3] <- hsvMultValue(provinceColours[2], 0.8,)
-provinceColours[4] <- hsvMultValue(provinceColours[2], 1.0, -0.1)
-provinceColours[5] <- hsvMultValue(provinceColours[2], 0.8, -0.1)
-provinceColours[7] <- hsvMultValue(provinceColours[6], 0.8)
-provinceColours[9] <- hsvMultValue(provinceColours[8], 0.8)
-provinceColours[10] <- hsvMultValue(provinceColours[8], 0.6)
+provinceColours['Alberta'] <- hsvMultValue(provinceColours['Alberta'], 0.8,)
+provinceColours['Saskatchewan'] <- hsvMultValue(provinceColours['Saskatchewan'], 1.0, -0.1)
+provinceColours['Manitoba'] <- hsvMultValue(provinceColours['Manitoba'], 0.8, -0.1)
+provinceColours['Quebec'] <- hsvMultValue(provinceColours['Quebec'], 0.8)
+provinceColours['Nova Scotia'] <- hsvMultValue(provinceColours['Nova Scotia'], 0.8)
+provinceColours['Newfoundland'] <- hsvMultValue(provinceColours['Newfoundland'], 0.6)
 
-cityRural.labs = c(all='Full Province', bigcities='Major Cities', smallcitiesrural='Small Cities / Rural');
+cityRural.labs = c(bigcities='Major Cities', smallcitiesrural='Small Cities / Rural');
 appleCityRural$valueLabel <- getValueLabel(appleCityRural);
 setupPlot(
-  ggplot(appleCityRural[appleCityRural$category=='driving' & appleCityRural$cityRural != 'all' & appleCityRural$region != 'Canada',],
-         aes(y=value7, x=date)) + geom_line(aes(color=region), size=1) +
+  ggplot(subset(appleCityRural, category=='driving' & province != 'Canada' & cityRural != 'bigcity'),
+         aes(y=value7, x=date)) + geom_line(aes(color=province), size=1) +
 #    geom_point(aes(y=value, color=region), size=0.25, alpha=0.2) +
     scale_color_manual(values=provinceColours) +
     #      geom_text(aes(label=valueLabel), size=2, nudge_y = 2, color='#555555') +
