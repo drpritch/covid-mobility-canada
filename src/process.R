@@ -373,10 +373,8 @@ for (province in levels(apple$province)) {
   setupPlot(
     ggplot(apple[provinceFilter,], aes(y=value7, x=date)) +
       geom_point(aes(y=value), size=0.25, alpha=0.2) +
-      geom_ribbon(data=apple[provinceFilter,],
-                  aes(ymin=valueMin, ymax=value7_pos), fill=redFill, alpha=0.5, show.legend=FALSE) +
-      geom_ribbon(data=apple[provinceFilter,],
-                  aes(ymin=valueMin, ymax=value7_neg), fill=blueFill, alpha=0.5, show.legend=FALSE) +
+      geom_ribbon(aes(ymin=valueMin, ymax=value7_pos), fill=redFill, alpha=0.5, show.legend=FALSE) +
+      geom_ribbon(aes(ymin=valueMin, ymax=value7_neg), fill=blueFill, alpha=0.5, show.legend=FALSE) +
       geom_line() +
       geom_text(aes(label=valueLabel), size=2, nudge_y = 5, color='#555555') +
       geom_label(aes(label = headlineLabel, y = -Inf), hjust='left', vjust='bottom',
@@ -418,9 +416,13 @@ provinceColours['Nova Scotia'] <- hsvMultValue(provinceColours['Nova Scotia'], 0
 provinceColours['Newfoundland'] <- hsvMultValue(provinceColours['Newfoundland'], 0.6)
 
 cityRural.labs = c(bigcities='Major Cities', smallcitiesrural='Small Cities / Rural');
+appleCityRural$valueMin <- getMin(appleCityRural);
+appleCityRural$value7_pos <- pmax(appleCityRural$value7, appleCityRural$valueMin);
+appleCityRural$value7_neg <- pmin(appleCityRural$value7, appleCityRural$valueMin);
 appleCityRural$valueLabel <- getValueLabel(appleCityRural);
+appleCityRural$headlineLabel <- getHeadlineLabel(appleCityRural, startDate='2020/03/01');
 setupPlot(
-  ggplot(subset(appleCityRural, category=='driving' & province != 'Canada' & cityRural != 'bigcity'),
+  ggplot(subset(appleCityRural, category=='driving' & province != 'Canada' & cityRural %in% c('bigcities', 'smallcitiesrural')),
          aes(y=value7, x=date)) + geom_line(aes(color=province), size=1) +
 #    geom_point(aes(y=value, color=region), size=0.25, alpha=0.2) +
     scale_color_manual(values=provinceColours) +
