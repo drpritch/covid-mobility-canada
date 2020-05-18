@@ -378,11 +378,32 @@ setupPlot(
 ggsave(filename = '../output/apple_all.png', device = 'png', dpi='print',
    width=12, height=4, units='in', scale=1.5
 );
-for (province in levels(apple$province)) {
-  provinceFilter <- apple$province == province;
-  provinceFilename <- tolower(gsub(' ','',province));
+
+appleCityRural$region <- factor(appleCityRural$region);
+appleCityRural$valueMin <- getMin(appleCityRural);
+appleCityRural$value7_pos <- pmax(appleCityRural$value7, appleCityRural$valueMin);
+appleCityRural$value7_neg <- pmin(appleCityRural$value7, appleCityRural$valueMin);
+appleCityRural$valueLabel <- getValueLabel(appleCityRural);
+appleCityRural$headlineLabel <- getHeadlineLabel(appleCityRural, startDate='2020/03/01');
+appleCityRural$region_Rest <- as.character(appleCityRural$region);
+filter <- appleCityRural$cityRural == 'smallcitiesrural' & appleCityRural$region %in% c('BC', 'Alberta', 'Ontario', 'Quebec', 'Nova Scotia');
+appleCityRural$region_Rest[filter] <- paste0('Rest of ', appleCityRural$region[filter]);
+appleCityRural$region_Rest <- factor(appleCityRural$region_Rest);
+# Pull the cities to the start of the factor order, so that "Rest of" is the last row.
+appleCityRural$region_Rest <- fct_relevel(appleCityRural$region_Rest,
+    c('Vancouver', 'Edmonton', 'Calgary', 'Toronto', 'Ottawa', 'Montreal', 'Halifax'));
+appleCityRural$region_Rest <- fct_recode(appleCityRural$region_Rest,
+                            'Metro Vancouver'='Vancouver',
+                            'Greater Edmonton'='Edmonton',
+                            'Calgary Region'='Calgary',
+                            'Greater Toronto'='Toronto',
+                            'Ottawa-Gatineau'='Ottawa',
+                            'Greater Montreal'='Montreal');
+for (theProvince in levels(appleCityRural$province)) {
+  provinceFilename <- tolower(gsub(' ','', theProvince));
+  appleSubset <- subset(appleCityRural, province==theProvince & cityRural %in% c('bigcity', 'smallcitiesrural'));
   setupPlot(
-    ggplot(apple[provinceFilter,], aes(y=value7, x=date)) +
+    ggplot(appleSubset, aes(y=value7, x=date)) +
       geom_point(aes(y=value), size=0.25, alpha=0.2) +
       geom_ribbon(aes(ymin=valueMin, ymax=value7_pos), fill=redFill, alpha=0.5, show.legend=FALSE) +
       geom_ribbon(aes(ymin=valueMin, ymax=value7_neg), fill=blueFill, alpha=0.5, show.legend=FALSE) +
@@ -390,11 +411,11 @@ for (province in levels(apple$province)) {
       geom_text(aes(label=valueLabel), size=2, nudge_y = 5, color='#555555') +
       geom_label(aes(label = headlineLabel, y = -Inf), hjust='left', vjust='bottom',
                  size=5, parse=TRUE, label.size=0, fill='#ffffff00') +
-      facet_grid(rows=vars(region), cols=vars(category), switch='y'),
+      facet_grid(rows=vars(region_Rest), cols=vars(category), switch='y'),
     startDate = '2020/03/01',
     isGoogle = FALSE, isDouble=TRUE);
-  nregions <- length(levels(droplevels(apple[provinceFilter,]$region)))
-  ncats <- length(levels(droplevels(apple[provinceFilter,]$category)))
+  nregions <- length(levels(droplevels(appleSubset$region_Rest)))
+  ncats <- length(levels(droplevels(appleSubset$category)))
   ggsave(filename = paste0('../output/apple_',provinceFilename,'.png'), device = 'png', dpi='print',
          width=ifelse(ncats==3,4,1.5), height=nregions*1.2 + 0.4, units='in', scale=1.5);
 }
@@ -427,11 +448,6 @@ provinceColours['Nova Scotia'] <- hsvMultValue(provinceColours['Nova Scotia'], 0
 provinceColours['Newfoundland'] <- hsvMultValue(provinceColours['Newfoundland'], 0.6)
 
 cityRural.labs = c(bigcities='Major Cities', smallcitiesrural='Small Cities / Rural');
-appleCityRural$valueMin <- getMin(appleCityRural);
-appleCityRural$value7_pos <- pmax(appleCityRural$value7, appleCityRural$valueMin);
-appleCityRural$value7_neg <- pmin(appleCityRural$value7, appleCityRural$valueMin);
-appleCityRural$valueLabel <- getValueLabel(appleCityRural);
-appleCityRural$headlineLabel <- getHeadlineLabel(appleCityRural, startDate='2020/03/01');
 setupPlot(
   ggplot(subset(appleCityRural, category=='driving' & province != 'Canada' & cityRural %in% c('bigcities', 'smallcitiesrural')),
          aes(y=value7, x=date)) + geom_line(aes(color=province), size=1) +
