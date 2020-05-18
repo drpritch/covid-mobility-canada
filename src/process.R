@@ -314,7 +314,6 @@ google$value7 <- getRolling(google);
 
 setupPlot(
   ggplot(google, aes(y=value7, x=date)) +
-    ggtitle(paste0("Mobility in Canada During Covid (as of ", format.Date(max(google$date), "%b %d"), ")")) +
     geom_line(aes(y=value7)) +
     facet_grid(rows=vars(category), cols=vars(region), scales = 'free_y', switch='y',
                labeller = labeller(region = region.labs, category=category.labs)),
@@ -339,7 +338,6 @@ for (region in levels(google$region)) {
   regionFilename <- tolower(gsub(' ','',region));
   setupPlot(
     ggplot(google[regionFilter,], aes(y=value7, x=date)) +
-      ggtitle(paste0("Mobility in ", region, " During Covid (as of ", format.Date(max(google$date), "%b %d"), ")")) +
       geom_point(aes(y=value), size=0.25, alpha=0.2) +
       geom_ribbon(data=google[regionFilter,],
                   aes(ymin=valueMin, ymax=value7_pos), fill=redFill, alpha=0.5, show.legend=FALSE) +
@@ -354,7 +352,7 @@ for (region in levels(google$region)) {
     startDate = '2020/03/01',
     isGoogle = TRUE, isDouble = TRUE);
   ggsave(filename = paste0('../output/google_', regionFilename, '.png'), device = 'png', dpi='print',
-         width=4, height=3, units='in', scale=1.5);
+         width=4, height=2.6, units='in', scale=1.5);
 }
 
 apple$value7 <- getRolling(apple);
@@ -407,6 +405,7 @@ for (theProvince in levels(appleCityRural$province)) {
       geom_point(aes(y=value), size=0.25, alpha=0.2) +
       geom_ribbon(aes(ymin=valueMin, ymax=value7_pos), fill=redFill, alpha=0.5, show.legend=FALSE) +
       geom_ribbon(aes(ymin=valueMin, ymax=value7_neg), fill=blueFill, alpha=0.5, show.legend=FALSE) +
+      ggtitle(paste0("Mobility in ", theProvince, " During Covid (as of ", format.Date(max(apple$date), "%b %d"), ")")) +
       geom_line() +
       geom_text(aes(label=valueLabel), size=2, nudge_y = 5, color='#555555') +
       geom_label(aes(label = headlineLabel, y = -Inf), hjust='left', vjust='bottom',
@@ -417,7 +416,7 @@ for (theProvince in levels(appleCityRural$province)) {
   nregions <- length(levels(droplevels(appleSubset$region_Rest)))
   ncats <- length(levels(droplevels(appleSubset$category)))
   ggsave(filename = paste0('../output/apple_',provinceFilename,'.png'), device = 'png', dpi='print',
-         width=ifelse(ncats==3,4,1.5), height=nregions*1.2 + 0.4, units='in', scale=1.5);
+         width=ifelse(ncats==3,4,1.5), height=nregions*1.2 + 0.8, units='in', scale=1.5);
 }
 
 
