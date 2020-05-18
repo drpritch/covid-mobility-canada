@@ -46,23 +46,30 @@ getRolling <- function(data) {
 }
 getMin <- function(data) {
   result <- rep(NA, nrow(data));
+  if (!('cityRural' %in% colnames(data)))
+    data$cityRural <- factor('dummy');
   for(category in levels(data$category))
-    for(region in levels(data$region)) {
-      filter <- data$category==category &  data$region==region &
-        data$date>=minDateRegion[region] +3;
-      # Using value7 with date+3 gives 7-day average from 3/23-3/29
-      # Deliberately leave everything before date threshold as NA
-      result[filter] <- data[filter,]$value7[1];
-    }
+    for(region in levels(data$region))
+      for (cityRural in levels(data$cityRural)) {
+        filter <- data$category==category & data$region==region & data$cityRural == cityRural &
+          data$date>=minDateRegion[region] +3;
+        # Using value7 with date+3 gives 7-day average from 3/23-3/29
+        # Deliberately leave everything before date threshold as NA
+        result[filter] <- data[filter,]$value7[1];
+      }
   result
 }
 getValueLabel <- function(data, minDate) {
   result <- rep(NA, nrow(data));
   # Show: minimum date, final date (at 7-day rolling center), final date minus a week
   filter <- data$date %in% c(max(data$date) - 10, max(data$date) - 3);
-  for(region in levels(data$region)) {
-    filter[data$region==region & data$date==minDateRegion[region] + 3] <- TRUE;
-  }
+  if (!('cityRural' %in% colnames(data)))
+    data$cityRural <- factor('dummy');
+  for (cityRural in levels(data$cityRural))
+    for(region in levels(data$region)) {
+      filter[data$region==region & data$cityRural==cityRural &
+             data$date==minDateRegion[region] + 3] <- TRUE;
+    }
   result[filter] <- round(data[filter,]$value7, 0);
   result
 }
@@ -76,17 +83,20 @@ arrowAndRound <- function(value) {
 }
 getHeadlineLabel <- function(data, startDate, useTiny = TRUE) {
   result <- rep(NA, nrow(data));
+  if (!('cityRural' %in% colnames(data)))
+    data$cityRural <- factor('dummy');
   for(category in levels(data$category))
-    for(region in levels(data$region)) {
-      minDate <- minDateRegion[region] + 3;
-      minDatePlotMath <- format.Date(minDate, '%b~%d');
-      filter <- data$category==category & data$region==region;
-      dateFilter <- data$date %in% c(minDate, max(data$date) - 10, max(data$date) - 3);
-      points <- data$value7[filter & dateFilter];
-      result[filter & data$date == startDate] <- paste0(
-        signAndRound(points[3]-points[1]),
-        ifelse(useTiny,'~scriptscriptstyle(','~'), 'from~', minDatePlotMath, ifelse(useTiny, ')',''))
-    }
+    for(cityRural in levels(data$cityRural))
+      for(region in levels(data$region)) {
+        minDate <- minDateRegion[region] + 3;
+        minDatePlotMath <- format.Date(minDate, '%b~%d');
+        filter <- data$category==category & data$region==region & data$cityRural == cityRural;
+        dateFilter <- data$date %in% c(minDate, max(data$date) - 10, max(data$date) - 3);
+        points <- data$value7[filter & dateFilter];
+        result[filter & data$date == startDate] <- paste0(
+          signAndRound(points[3]-points[1]),
+          ifelse(useTiny,'~scriptscriptstyle(','~'), 'from~', minDatePlotMath, ifelse(useTiny, ')',''))
+      }
   result
 }
 
@@ -227,11 +237,12 @@ extractCityRural <- function(apple, region, regionCityNames) {
   # clone of getRolling, with cityRural instead of region
   result$value7 <- rep(NA, nrow(result));
   for(category in levels(result$category))
-    for(cityRural in levels(result$cityRural)) {
-      filter <- result$category == category & result$cityRural == cityRural;
-      result$value7[filter] <- rollapply(result[filter,]$value, 7, function(x) { mean(x, na.rm=TRUE) },
-                                         fill=NA, align='center');
-    }
+    for(region in levels(factor(result$region)))
+      for(cityRural in levels(result$cityRural)) {
+        filter <- result$category == category & result$cityRural == cityRural & result$region == region;
+        result$value7[filter] <- rollapply(result[filter,]$value, 7, function(x) { mean(x, na.rm=TRUE) },
+                                           fill=NA, align='center');
+      }
   result;
 }
 
