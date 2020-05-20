@@ -133,7 +133,7 @@ google <- droplevels(google);
 
 apple <- read.csv('../input/apple.csv');
 apple <- as.data.frame(
-  apple %>% pivot_longer(cols=5:ncol(apple), names_to='date', names_prefix='X')
+  apple %>% pivot_longer(cols=7:ncol(apple), names_to='date', names_prefix='X')
 );
 apple$date <- as.Date(apple$date, "%Y.%m.%d");
 regionOrder <-
@@ -188,7 +188,7 @@ for (region in levels(apple$region)) {
     apple$value[modeFilter] <- apple$value[modeFilter] *
       unlist(baselineDayOfWeek_mode[weekdays(apple$date[modeFilter], abbreviate=T)]) - 100;
     
-    # Strip NAs. May 11/12 are both NAs throughout.
+    # Interpolate NAs. May 11/12 are both NAs throughout.
     apple$value[modeFilter] <- na.approx(apple$value[modeFilter]);
   }
 }
@@ -463,20 +463,24 @@ ggsave(filename = '../output/apple_cityRural.png', device = 'png', dpi='print',
        width=4.5, height=2, units='in', scale=1.5);
 #ggplot(appleCityRural, aes(y=value7, x=date)) + geom_line(aes(color=cityRural)) + facet_grid(row=vars(category), col=vars(region))
 
-appleCityRural$valueB <- round(pmax(pmin(appleCityRural$value,10), -70)/10)*10
 appleCityRural_sub  <- subset(appleCityRural, category=='driving' & cityRural %in% c('bigcity','smallcitiesrural') & region != 'Canada');
+appleCityRural_sub$valueB <- round(pmax(pmin(appleCityRural_sub$value,10), -60)/4)*4
+
+# Sort regions by final week
 foo <- subset(appleCityRural_sub, date == max(appleCityRural$date) - 3)[,c('region_Rest','value7')];
 appleCityRural_sub$region_Rest <- fct_relevel(appleCityRural_sub$region_Rest, as.character(foo$region_Rest[order(foo$value7, decreasing=T)]))
-for (region in levels(appleCityRural_sub$region_Rest)) {
-  filter <- appleCityRural_sub$region_Rest == region;
-  appleCityRural_sub[filter,]$value <- na.approx(appleCityRural_sub[filter,]$value);
-}
 ggplot(appleCityRural_sub,
   aes(y=region_Rest, x=date, fill=valueB)) +
-  geom_tile(color='white') +
+  geom_tile(color='white', size=0.3) +
   scale_fill_distiller(palette='RdBu') +
-  theme_light() +
-  scale_x_date(date_breaks = '1 week', date_labels='%b %d',
-               limits = c(as.Date('2020-03-01'), Sys.Date() - 1)) +
-  theme(axis.title.x=element_blank(), axis.text.x = element_text(angle = 90));
+  theme_minimal() +
+  ggtitle('Driving Reductions in Canada during COVID-19') +
+  scale_x_date(date_breaks = '1 week', date_labels='%b %d', expand=c(0,0),
+               limits = c(as.Date('2020-03-02'), Sys.Date())) +
+  theme(axis.title.x=element_blank(), axis.text.x = element_text(angle = 90),
+        axis.title.y=element_blank()) +
+  labs(fill='Reduction', caption='Source: Apple Mobility Report, rebaselined and with small city/rural estimates. drpritch.github.io/covid-mobility-canada')
+ggsave(filename = '../output/apple_heatmap.png', device = 'png', dpi='print',
+       width=7, height=2, units='in', scale=1.5);
+
 
