@@ -350,8 +350,7 @@ for (region in levels(google$region)) {
       geom_text(aes(label=valueLabel), size=2, nudge_y = 5, color='#555555') +
       geom_label(aes(label = headlineLabel, y = -Inf), hjust='left', vjust='bottom',
                  size=ifelse(googleHeadlineTiny, 3, 5), parse=TRUE, label.size=0, fill='#ffffff00') +
-      facet_wrap(~category, strip.position='top',
-                 labeller = labeller(category=category.labs)),
+      facet_wrap(~category, strip.position='top'),
     startDate = '2020/03/01',
     isGoogle = TRUE, isDouble = TRUE);
   ggsave(filename = paste0('../output/google_', regionFilename, '.png'), device = 'png', dpi='print',
