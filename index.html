@@ -55,7 +55,7 @@ body {
 <body>
 <div style="max-width: 800px; margin: auto">
 <h1>Monitoring COVID-19 &amp; Mobility in Canada </h1>
-<p><i>Data last updated May 25, 2020 20:45 EDT</i></p>
+<p><i>Data last updated May 26, 2020 21:00 EDT</i></p>
 
 <p><a href="https://twitter.com/drpritch2">@drpritch2</a> |
 <a href="https://github.com/drpritch/covid-mobility-canada">github</a> |
@@ -104,10 +104,15 @@ sets in and the distancing wanes.</p>
 <p>This dashboard focuses on the most effective publicly available metrics for monitoring
 physical distancing in Canada.</p>
 
-<p>The most important aspect of mobility monitoring is that the tight feedback loop: with the
-fastest data sources, we can observe mobility trends within 24 hours, and it may prove to be a
-leading indicator of COVID-19 cases. In order of feedback speed, indicators are: mobility; syndromic
-surveillance; COVID test submissions; positive test results; hospitalizations; deaths.</p>
+<p>The most important aspect of mobility monitoring is the tight feedback loop: with the
+fastest data sources, we can observe mobility trends within 24 hours, and it may prove to
+be a leading indicator of COVID-19 cases. In order of feedback speed, indicators are:
+mobility; sewage surveillance and syndromic surveillance; COVID test submissions;
+positive test results; hospitalizations; deaths. As we progress through the post-lockdown
+period, however, we must also be aware of the limitations of mobility data: it is only a
+proxy. Hopefully, with the right behaviours (social distancing, handwashing, masks for
+all) and the right public health controls (tracing, testing and isolating), mobility can
+return to normal and the pandemic remain controlled.</p>
 
 <h2>Data sources</h2>
 <ul>
@@ -160,13 +165,17 @@ reported 12 days late, Friday data reported 6 days late.</li>
     <li>Provincial data, but no municipal data available. Varying rural/urban
 composition makes province-to-province comparisons difficult.</li>
     <li>Actual travel, measured at the destination location.</li>
-    <li>Categorized by destination type/trip purpose. Pretty solid basis for analysis.</li>
+    <li>Categorized by destination type/trip purpose. A solid basis for analysis, but not comprehensive and subject to the whims of Google's normal classification process. For example:
+    <ul>
+      <li>Workplaces presumably omits many classes of work: construction, home cleaning, doctors' house calls, forestry camps, oil sands</li>
+      <li>Many activities excluded: socializing with friends, airport travel, hotel visits</li>
+    </ul>
+    </li>
     <li>The raw data is already reasonable. The only change in this analysis is a rolling
 seven-day average, for the same reasons as discussed for Apple data. In Google's published reports,
 be aware that the "headline" percentage shown for each category refers to travel on the final day of
 the dataset, a Friday.</li>
   </ul>
-  <a href="output/google_all.png"><img src="output/google_all.png" width="100%" /></a><br/>
 
 <a name="citymapper"><h2>CityMapper Mobility Index</h2></a>
 <ul>

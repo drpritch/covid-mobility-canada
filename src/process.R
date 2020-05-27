@@ -344,14 +344,14 @@ apple$valueMin <- getMin(apple);
 apple$value7_pos <- pmax(apple$value7, apple$valueMin);
 apple$value7_neg <- pmin(apple$value7, apple$valueMin);
 apple$valueLabel <- getValueLabel(apple);
-apple$headlineLabel <- getHeadlineLabel(apple, startDate='2020/01/19');
+apple$headlineLabel <- getHeadlineLabel(apple, startDate='2020/01/26');
 
 appleCityRural$region <- factor(appleCityRural$region);
 appleCityRural$valueMin <- getMin(appleCityRural);
 appleCityRural$value7_pos <- pmax(appleCityRural$value7, appleCityRural$valueMin);
 appleCityRural$value7_neg <- pmin(appleCityRural$value7, appleCityRural$valueMin);
 appleCityRural$valueLabel <- getValueLabel(appleCityRural);
-appleCityRural$headlineLabel <- getHeadlineLabel(appleCityRural, startDate='2020/01/19');
+appleCityRural$headlineLabel <- getHeadlineLabel(appleCityRural, startDate='2020/01/26');
 appleCityRural$region_Rest <- as.character(appleCityRural$region);
 filter <- appleCityRural$cityRural == 'smallcitiesrural' & appleCityRural$region %in% c('BC', 'Alberta', 'Ontario', 'Quebec', 'Nova Scotia');
 appleCityRural$region_Rest[filter] <- paste0('Rest of ', appleCityRural$region[filter]);
@@ -384,10 +384,10 @@ for (theProvince in levels(appleCityRural$province)) {
       geom_label(aes(label = headlineLabel, y = -Inf), hjust='left', vjust='bottom',
                  size=5, parse=TRUE, label.size=0, fill='#ffffff00') +
       facet_grid(rows=vars(region_Rest), cols=vars(category), switch='y'),
-    startDate = '2020/01/19',
+    startDate = '2020/01/26',
     isGoogle = FALSE, isDouble=TRUE);
   ggsave(filename = paste0('../output/apple_',provinceFilename,'.png'), device = 'png', dpi='print',
-         width=ifelse(ncats==3,4,1.5), height=nregions*1.2 + 0.8 + ifelse(ncats==1, 0.5, 0), units='in', scale=1.5);
+         width=ifelse(ncats==3,4,1.5), height=nregions*1.2 + 0.8 + ifelse(ncats==1, 0.15, 0), units='in', scale=1.5);
 }
 
 
@@ -425,7 +425,7 @@ setupPlot(
     scale_color_manual(values=provinceColours) +
     #      geom_text(aes(label=valueLabel), size=2, nudge_y = 2, color='#555555') +
       facet_grid(row=vars(category), col=vars(cityRural), labeller = labeller(cityRural = cityRural.labs)),
-  palette = '', isGoogle=FALSE, startDate='2020/01/19'
+  palette = '', isGoogle=FALSE, startDate='2020/01/26'
 );
 ggsave(filename = '../output/apple_cityRural.png', device = 'png', dpi='print',
        width=4.5, height=2, units='in', scale=1.5);
