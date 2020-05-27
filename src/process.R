@@ -296,7 +296,7 @@ setupPlot <- function(p, startDate = '2020/02/16', isGoogle = TRUE, isDouble=FAL
   }
   if (isBottom) {
     result <- result + labs(caption=ifelse(isGoogle, "Rolling 7 day average. drpritch.github.io/covid-mobility-canada",
-                            "Rebaselined similar to Google data. Rolling 7 day average. drpritch.githib.io/covid-mobility-canada"));
+                            "Rebaselined similar to Google data. Rolling 7 day average. drpritch.github.io/covid-mobility-canada"));
   }
   result;
 }
@@ -424,9 +424,9 @@ setupPlot(
 #    geom_point(aes(y=value, color=region), size=0.25, alpha=0.2) +
     scale_color_manual(values=provinceColours) +
     #      geom_text(aes(label=valueLabel), size=2, nudge_y = 2, color='#555555') +
-      facet_grid(row=vars(category), col=vars(cityRural), labeller = labeller(cityRural = cityRural.labs)),
+    facet_grid(row=vars(category), col=vars(cityRural), labeller = labeller(cityRural = cityRural.labs)),
   palette = '', isGoogle=FALSE, startDate='2020/01/26'
-);
+) + theme(plot.caption = element_text(size=6));
 ggsave(filename = '../output/apple_cityRural.png', device = 'png', dpi='print',
        width=4.5, height=2, units='in', scale=1.5);
 #ggplot(appleCityRural, aes(y=value7, x=date)) + geom_line(aes(color=cityRural)) + facet_grid(row=vars(category), col=vars(region))
