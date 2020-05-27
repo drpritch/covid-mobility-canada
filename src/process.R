@@ -268,7 +268,7 @@ appleCityRural$cityRural <- fct_relevel(appleCityRural$cityRural, c('bigcity', '
 ########################################################################################
 # Plotting
 
-setupPlot <- function(p, startDate = '2020/03/01', isGoogle = TRUE, isDouble=FALSE, dateSpacing = '1 week', regionName=NULL,palette='Set1') {
+setupPlot <- function(p, startDate = '2020/02/16', isGoogle = TRUE, isDouble=FALSE, dateSpacing = '1 week', regionName=NULL,palette='Set1') {
   isApple <- !isGoogle;
   isTop <- ifelse(isDouble, isApple, TRUE);
   isBottom <- ifelse(isDouble, isGoogle, TRUE);
@@ -288,16 +288,15 @@ setupPlot <- function(p, startDate = '2020/03/01', isGoogle = TRUE, isDouble=FAL
     scale_x_date(date_breaks = dateSpacing, date_labels='%b %d',
                  limits = c(as.Date(startDate), Sys.Date() - 1)) +
     geom_hline(yintercept = 0, alpha=0.5) +
-    theme(axis.title.x=element_blank(), axis.text.x = element_text(angle = 90));
+    theme(axis.title.x=element_blank(), axis.text.x = element_text(angle = 90, size=ifelse(isGoogle, 8, 6)));
   if(palette=='Set1') {
     result <- result +
       scale_color_brewer(palette=palette) +
       labs(x="", color="");
   }
   if (isBottom) {
-    result <- result + labs(caption=ifelse(isDouble, ifelse(isGoogle, "Apple data rebaselined similar to Google. Rolling 7 day average.\ndrpritch.github.io/covid-mobility-canada", ""),
-                     ifelse(isGoogle, "Rolling 7 day average. drpritch.github.io/covid-mobility-canada",
-                            "Rebaselined similar to Google data. Rolling 7 day average. drpritch.githib.io/covid-mobility-canada")));
+    result <- result + labs(caption=ifelse(isGoogle, "Rolling 7 day average. drpritch.github.io/covid-mobility-canada",
+                            "Rebaselined similar to Google data. Rolling 7 day average. drpritch.githib.io/covid-mobility-canada"));
   }
   result;
 }
@@ -305,27 +304,9 @@ redFill <- brewer.pal(n=8, 'Set1')[1];
 blueFill <- brewer.pal(n=8, 'Set1')[2];
 
 
-region.labs = c('Canada', 'Brit Columbia', 'Alberta', 'Saskatchewan', 'Manitoba', 'Ontario', 'Quebec', 'New Brunsw', 'Nova Scotia', 'Newfoundland');
-names(region.labs) = levels(google$region);
-region.labs2 = c('Canada', 'Brit Colum', 'Alberta', 'Saskatch', 'Manitoba', 'Ontario', 'Quebec', 'New Bruns', 'Nova Scot', 'Newfound');
-names(region.labs2) = levels(google$region);
-category.labs = c('Workplace', 'Transit Stations', 'Grocery & Phar', 'Retail & Recreat', 'Residential', 'Park');
+category.labs = c('Workplace', 'Transit Stations', 'Grocery & Pharmacy', 'Retail & Recreation', 'Residential', 'Park');
 names(category.labs) = levels(google$category);
-category.labs2 = c('Workplace', 'Transit Stations', 'Grocery & Pharmacy', 'Retail & Recreation', 'Residential', 'Park');
-names(category.labs2) = levels(google$category);
 google$value7 <- getRolling(google);
-
-setupPlot(
-  ggplot(google, aes(y=value7, x=date)) +
-    geom_line(aes(y=value7)) +
-    facet_grid(rows=vars(category), cols=vars(region), scales = 'free_y', switch='y',
-               labeller = labeller(region = region.labs, category=category.labs)),
-  startDate = '2020/03/01',
-  isGoogle = TRUE, dateSpacing = '2 weeks');
-ggsave(filename = '../output/google_all.png', device = 'png', dpi='print',
-       width=6.5, height=5.5, units='in', scale=1.5
-);
-
 
 googleHeadlineTiny <- Sys.Date() - max(google$date) > 6;
 google$valueMin <- getMin(google);
@@ -333,7 +314,7 @@ google$valueMin <- getMin(google);
 google$value7_pos <- pmax(google$value7, google$valueMin);
 google$value7_neg <- pmin(google$value7, google$valueMin);
 google$valueLabel <- getValueLabel(google);
-google$headlineLabel <- getHeadlineLabel(google, startDate='2020/03/01',
+google$headlineLabel <- getHeadlineLabel(google, startDate='2020/02/16',
       # If headline is big, made the suffix tiny                                   
       useTiny=!googleHeadlineTiny);
 for (region in levels(google$region)) {
@@ -350,11 +331,12 @@ for (region in levels(google$region)) {
       geom_text(aes(label=valueLabel), size=2, nudge_y = 5, color='#555555') +
       geom_label(aes(label = headlineLabel, y = -Inf), hjust='left', vjust='bottom',
                  size=ifelse(googleHeadlineTiny, 3, 5), parse=TRUE, label.size=0, fill='#ffffff00') +
-      facet_wrap(~category, strip.position='top'),
-    startDate = '2020/03/01',
+      ggtitle(paste0("Mobility in ", region, " During COVID-19 (as of ", format.Date(max(google$date), "%b %d"), ")")) +
+      facet_wrap(~category, strip.position='top', labeller = labeller(category=category.labs)),
+    startDate = '2020/02/16',
     isGoogle = TRUE, isDouble = TRUE);
   ggsave(filename = paste0('../output/google_', regionFilename, '.png'), device = 'png', dpi='print',
-         width=4, height=2.6, units='in', scale=1.5);
+         width=4, height=2.8, units='in', scale=1.5);
 }
 
 apple$value7 <- getRolling(apple);
@@ -362,29 +344,14 @@ apple$valueMin <- getMin(apple);
 apple$value7_pos <- pmax(apple$value7, apple$valueMin);
 apple$value7_neg <- pmin(apple$value7, apple$valueMin);
 apple$valueLabel <- getValueLabel(apple);
-apple$headlineLabel <- getHeadlineLabel(apple, startDate='2020/03/01');
-
-region.labs2 <- levels(apple$region);
-region.labs2[c(3,5)] <- c('Vancouv', 'Edmont');
-names(region.labs2) <- levels(apple$region);
-
-setupPlot(
-  ggplot(apple, aes(y=value7, x=date)) +
-    ggtitle(paste0("Mobility in Canada During Covid (as of ", format.Date(max(apple$date), "%b %d"), ")")) +
-    geom_line(aes(y=value7)) +
-    facet_grid(rows=vars(category), cols=vars(region), scales = 'free_y', switch='y'),
-  startDate = '2020/02/01',
-  isGoogle=FALSE, dateSpacing = '2 weeks');
-ggsave(filename = '../output/apple_all.png', device = 'png', dpi='print',
-   width=12, height=4, units='in', scale=1.5
-);
+apple$headlineLabel <- getHeadlineLabel(apple, startDate='2020/01/19');
 
 appleCityRural$region <- factor(appleCityRural$region);
 appleCityRural$valueMin <- getMin(appleCityRural);
 appleCityRural$value7_pos <- pmax(appleCityRural$value7, appleCityRural$valueMin);
 appleCityRural$value7_neg <- pmin(appleCityRural$value7, appleCityRural$valueMin);
 appleCityRural$valueLabel <- getValueLabel(appleCityRural);
-appleCityRural$headlineLabel <- getHeadlineLabel(appleCityRural, startDate='2020/03/01');
+appleCityRural$headlineLabel <- getHeadlineLabel(appleCityRural, startDate='2020/01/19');
 appleCityRural$region_Rest <- as.character(appleCityRural$region);
 filter <- appleCityRural$cityRural == 'smallcitiesrural' & appleCityRural$region %in% c('BC', 'Alberta', 'Ontario', 'Quebec', 'Nova Scotia');
 appleCityRural$region_Rest[filter] <- paste0('Rest of ', appleCityRural$region[filter]);
@@ -402,23 +369,25 @@ appleCityRural$region_Rest <- fct_recode(appleCityRural$region_Rest,
 for (theProvince in levels(appleCityRural$province)) {
   provinceFilename <- tolower(gsub(' ','', theProvince));
   appleSubset <- subset(appleCityRural, province==theProvince & cityRural %in% c('bigcity', 'smallcitiesrural'));
+  titleNarrow <- paste0("Mobility in\n", theProvince, "\nDuring COVID-19");
+  titleFull <- paste0(gsub('\n', ' ', titleNarrow), " (as of ", format.Date(max(apple$date), "%b %d"), ")");
+  nregions <- length(levels(droplevels(appleSubset$region_Rest)))
+  ncats <- length(levels(droplevels(appleSubset$category)))
   setupPlot(
     ggplot(appleSubset, aes(y=value7, x=date)) +
       geom_point(aes(y=value), size=0.25, alpha=0.2) +
       geom_ribbon(aes(ymin=valueMin, ymax=value7_pos), fill=redFill, alpha=0.5, show.legend=FALSE) +
       geom_ribbon(aes(ymin=valueMin, ymax=value7_neg), fill=blueFill, alpha=0.5, show.legend=FALSE) +
-      ggtitle(paste0("Mobility in ", theProvince, " During Covid (as of ", format.Date(max(apple$date), "%b %d"), ")")) +
+      ggtitle(ifelse(ncats>1, titleFull, titleNarrow)) +
       geom_line() +
       geom_text(aes(label=valueLabel), size=2, nudge_y = 5, color='#555555') +
       geom_label(aes(label = headlineLabel, y = -Inf), hjust='left', vjust='bottom',
                  size=5, parse=TRUE, label.size=0, fill='#ffffff00') +
       facet_grid(rows=vars(region_Rest), cols=vars(category), switch='y'),
-    startDate = '2020/03/01',
+    startDate = '2020/01/19',
     isGoogle = FALSE, isDouble=TRUE);
-  nregions <- length(levels(droplevels(appleSubset$region_Rest)))
-  ncats <- length(levels(droplevels(appleSubset$category)))
   ggsave(filename = paste0('../output/apple_',provinceFilename,'.png'), device = 'png', dpi='print',
-         width=ifelse(ncats==3,4,1.5), height=nregions*1.2 + 0.8, units='in', scale=1.5);
+         width=ifelse(ncats==3,4,1.5), height=nregions*1.2 + 0.8 + ifelse(ncats==1, 0.5, 0), units='in', scale=1.5);
 }
 
 
@@ -456,7 +425,7 @@ setupPlot(
     scale_color_manual(values=provinceColours) +
     #      geom_text(aes(label=valueLabel), size=2, nudge_y = 2, color='#555555') +
       facet_grid(row=vars(category), col=vars(cityRural), labeller = labeller(cityRural = cityRural.labs)),
-  palette = '', isGoogle=FALSE
+  palette = '', isGoogle=FALSE, startDate='2020/01/19'
 );
 ggsave(filename = '../output/apple_cityRural.png', device = 'png', dpi='print',
        width=4.5, height=2, units='in', scale=1.5);
@@ -484,7 +453,7 @@ ggplot(appleCityRural_sub,
                limits = c(as.Date('2020-03-02'), Sys.Date())) +
   scale_y_continuous(breaks = 1:length(regionRestLevels), labels=regionRestLevels, 
                      sec.axis = sec_axis(~., breaks=1:length(regionRestLevels), labels=regionRestLevels)) +
-  theme(axis.title.x=element_blank(), axis.text.x = element_text(angle = 90),
+  theme(axis.title.x=element_blank(), axis.text.x = element_text(angle = 90, size = 8),
         axis.title.y=element_blank()) +
   labs(fill='Reduction', caption='Source: Apple Mobility Report, rebaselined and with small city/rural estimates. drpritch.github.io/covid-mobility-canada')
 ggsave(filename = '../output/apple_heatmap.png', device = 'png', dpi='print',
