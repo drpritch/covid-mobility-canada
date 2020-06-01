@@ -8,6 +8,8 @@ library('RColorBrewer');
 # TODO: use subset and summarize throughout
 
 
+REPORT_FROM_MIN <- FALSE;
+
 provinceOrder <-
   c('Canada','BC', 'Alberta', 'Saskatchewan', 'Manitoba',
     'Ontario', 'Quebec',
@@ -51,11 +53,11 @@ getMin <- function(data) {
   for(category in levels(data$category))
     for(region in levels(data$region))
       for (cityRural in levels(data$cityRural)) {
-        filter <- data$category==category & data$region==region & data$cityRural == cityRural &
-          data$date>=minDateRegion[region] +3;
+        filter <- ifelse(REPORT_FROM_MIN, data$date>=minDateRegion[region] +3, TRUE);
+        filter <- filter & data$category==category & data$region==region & data$cityRural == cityRural;
         # Using value7 with date+3 gives 7-day average from 3/23-3/29
         # Deliberately leave everything before date threshold as NA
-        result[filter] <- data[filter,]$value7[1];
+        result[filter] <- ifelse(REPORT_FROM_MIN, data[filter,]$value7[1], 0);
       }
   result
 }
@@ -93,9 +95,10 @@ getHeadlineLabel <- function(data, startDate, useTiny = TRUE) {
         filter <- data$category==category & data$region==region & data$cityRural == cityRural;
         dateFilter <- data$date %in% c(minDate, max(data$date) - 10, max(data$date) - 3);
         points <- data$value7[filter & dateFilter];
-        result[filter & data$date == startDate] <- paste0(
-          signAndRound(points[3]-points[1]),
-          ifelse(useTiny,'~scriptscriptstyle(','~'), 'from~', minDatePlotMath, ifelse(useTiny, ')',''))
+        result[filter & data$date == startDate] <-
+          ifelse(REPORT_FROM_MIN, paste0(signAndRound(points[3] - points[1], 0),
+          ifelse(useTiny,'~scriptscriptstyle(','~'), 'from~', minDatePlotMath, ifelse(useTiny, ')','')),
+          signAndRound(points[3]));
       }
   result
 }
@@ -324,9 +327,9 @@ for (region in levels(google$region)) {
     ggplot(google[regionFilter,], aes(y=value7, x=date)) +
       geom_point(aes(y=value), size=0.25, alpha=0.2) +
       geom_ribbon(data=google[regionFilter,],
-                  aes(ymin=valueMin, ymax=value7_pos), fill=redFill, alpha=0.5, show.legend=FALSE) +
+                  aes(ymin=valueMin, ymax=value7_pos), fill=redFill, alpha=0.1, show.legend=FALSE) +
       geom_ribbon(data=google[regionFilter,],
-                  aes(ymin=valueMin, ymax=value7_neg), fill=blueFill, alpha=0.5, show.legend=FALSE) +
+                  aes(ymin=valueMin, ymax=value7_neg), fill=blueFill, alpha=0.1, show.legend=FALSE) +
       geom_line() +
       geom_text(aes(label=valueLabel), size=2, nudge_y = 5, color='#555555') +
       geom_label(aes(label = headlineLabel, y = -Inf), hjust='left', vjust='bottom',
@@ -376,8 +379,8 @@ for (theProvince in levels(appleCityRural$province)) {
   setupPlot(
     ggplot(appleSubset, aes(y=value7, x=date)) +
       geom_point(aes(y=value), size=0.25, alpha=0.2) +
-      geom_ribbon(aes(ymin=valueMin, ymax=value7_pos), fill=redFill, alpha=0.5, show.legend=FALSE) +
-      geom_ribbon(aes(ymin=valueMin, ymax=value7_neg), fill=blueFill, alpha=0.5, show.legend=FALSE) +
+      geom_ribbon(aes(ymin=valueMin, ymax=value7_pos), fill=redFill, alpha=0.1, show.legend=FALSE) +
+      geom_ribbon(aes(ymin=valueMin, ymax=value7_neg), fill=blueFill, alpha=0.1, show.legend=FALSE) +
       ggtitle(ifelse(ncats>1, titleFull, titleNarrow)) +
       geom_line() +
       geom_text(aes(label=valueLabel), size=2, nudge_y = 5, color='#555555') +
