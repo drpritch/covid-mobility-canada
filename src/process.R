@@ -311,7 +311,7 @@ category.labs = c('Workplace', 'Transit Stations', 'Grocery & Pharmacy', 'Retail
 names(category.labs) = levels(google$category);
 google$value7 <- getRolling(google);
 
-googleHeadlineTiny <- Sys.Date() - max(google$date) > 6;
+googleHeadlineTiny <- FALSE; #Sys.Date() - max(google$date) > 6;
 google$valueMin <- getMin(google);
 #google$valueMin[google$category == 'park'] <- NA;
 google$value7_pos <- pmax(google$value7, google$valueMin);
