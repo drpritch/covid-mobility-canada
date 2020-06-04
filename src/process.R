@@ -1,8 +1,8 @@
 library('ggplot2');
 library('forcats');
 library('tidyr');
-library('zoo');   # for rollmean
 library('RColorBrewer');
+library('lubridate')
 
 
 # TODO: use subset and summarize throughout
@@ -271,24 +271,37 @@ appleCityRural$cityRural <- fct_relevel(appleCityRural$cityRural, c('bigcity', '
 ########################################################################################
 # Plotting
 
-setupPlot <- function(p, startDate = '2020/02/16', isGoogle = TRUE, isDouble=FALSE, dateSpacing = '1 week', regionName=NULL,palette='Set1') {
+bimonthly <- function(x) {
+  x_range <- range(x, na.rm = TRUE)
+  
+  date_range <- c(
+    lubridate::floor_date(x_range[1], "month"),
+    lubridate::ceiling_date(x_range[2], "month")
+  )
+  monthly <- seq(date_range[1], date_range[2], by = "1 month")
+  
+  sort(c(monthly, monthly + days(14)))
+}
+
+# Apple: 01/26 - good for showing "baseline" / near zero period. But... poor horizontal
+# alignment with Google data. So... make Google align with it.
+appleStartDate <- '2020/01/26';
+# Google: 02/16 - start of actual data
+googleStartDate <- '2020/01/26';
+
+YMAX = 40;
+
+setupPlot <- function(p, startDate = googleStartDate, isGoogle = TRUE, isDouble=FALSE, dateSpacing = '4 weeks', regionName=NULL,palette='Set1') {
   isApple <- !isGoogle;
   isTop <- ifelse(isDouble, isApple, TRUE);
   isBottom <- ifelse(isDouble, isGoogle, TRUE);
-  isPost <- dateSpacing == '1 week' & isDouble==FALSE;
-  ylim <- NULL;
-  if(!isPost) {
-    ylim <- c(-90, ifelse(isApple, 30, 90));
-  }
-  else if(isGoogle) {
-    ylim <- c(-90, NA);
-  }
+  ylim <- c(-90, YMAX);
   result <- p +
     theme_light() +
     scale_y_continuous(breaks=seq(-100,200,by=20), minor_breaks=seq(-100,200, by=10),
                        limits=ylim,
                        name=ifelse(isGoogle, "Google Community Mobility Index", "Apple Mobility Index")) +
-    scale_x_date(date_breaks = dateSpacing, date_labels='%b %d',
+    scale_x_date(breaks = bimonthly, date_labels='%b %d',
                  limits = c(as.Date(startDate), Sys.Date() - 1)) +
     geom_hline(yintercept = 0, alpha=0.5) +
     theme(axis.title.x=element_blank(), axis.text.x = element_text(angle = 90, size=ifelse(isGoogle, 8, 6)));
@@ -311,13 +324,13 @@ category.labs = c('Workplace', 'Transit Stations', 'Grocery & Pharmacy', 'Retail
 names(category.labs) = levels(google$category);
 google$value7 <- getRolling(google);
 
-googleHeadlineTiny <- FALSE; #Sys.Date() - max(google$date) > 6;
+googleHeadlineTiny <- FALSE;
 google$valueMin <- getMin(google);
 #google$valueMin[google$category == 'park'] <- NA;
 google$value7_pos <- pmax(google$value7, google$valueMin);
 google$value7_neg <- pmin(google$value7, google$valueMin);
 google$valueLabel <- getValueLabel(google);
-google$headlineLabel <- getHeadlineLabel(google, startDate='2020/02/16',
+google$headlineLabel <- getHeadlineLabel(google, startDate=min(google$date),
       # If headline is big, made the suffix tiny                                   
       useTiny=!googleHeadlineTiny);
 for (region in levels(google$region)) {
@@ -327,34 +340,27 @@ for (region in levels(google$region)) {
     ggplot(google[regionFilter,], aes(y=value7, x=date)) +
       geom_point(aes(y=value), size=0.25, alpha=0.2) +
       geom_ribbon(data=google[regionFilter,],
-                  aes(ymin=valueMin, ymax=value7_pos), fill=redFill, alpha=0.1, show.legend=FALSE) +
+                  aes(ymin=valueMin, ymax=pmin(value7_pos, YMAX)), fill=redFill, alpha=0.1, show.legend=FALSE) +
       geom_ribbon(data=google[regionFilter,],
                   aes(ymin=valueMin, ymax=value7_neg), fill=blueFill, alpha=0.1, show.legend=FALSE) +
       geom_line() +
       geom_text(aes(label=valueLabel), size=2, nudge_y = 5, color='#555555') +
-      geom_label(aes(label = headlineLabel, y = -Inf), hjust='left', vjust='bottom',
+      geom_label(aes(label = headlineLabel, y = -Inf), hjust='center', vjust='bottom',
                  size=ifelse(googleHeadlineTiny, 3, 5), parse=TRUE, label.size=0, fill='#ffffff00') +
       ggtitle(paste0("Mobility in ", region, " During COVID-19 (as of ", format.Date(max(google$date), "%b %d"), ")")) +
       facet_wrap(~category, strip.position='top', labeller = labeller(category=category.labs)),
-    startDate = '2020/02/16',
+    startDate = googleStartDate,
     isGoogle = TRUE, isDouble = TRUE);
   ggsave(filename = paste0('../output/google_', regionFilename, '.png'), device = 'png', dpi='print',
-         width=4, height=2.8, units='in', scale=1.5);
+         width=4, height=3.0, units='in', scale=1.5);
 }
-
-apple$value7 <- getRolling(apple);
-apple$valueMin <- getMin(apple);
-apple$value7_pos <- pmax(apple$value7, apple$valueMin);
-apple$value7_neg <- pmin(apple$value7, apple$valueMin);
-apple$valueLabel <- getValueLabel(apple);
-apple$headlineLabel <- getHeadlineLabel(apple, startDate='2020/01/26');
 
 appleCityRural$region <- factor(appleCityRural$region);
 appleCityRural$valueMin <- getMin(appleCityRural);
 appleCityRural$value7_pos <- pmax(appleCityRural$value7, appleCityRural$valueMin);
 appleCityRural$value7_neg <- pmin(appleCityRural$value7, appleCityRural$valueMin);
 appleCityRural$valueLabel <- getValueLabel(appleCityRural);
-appleCityRural$headlineLabel <- getHeadlineLabel(appleCityRural, startDate='2020/01/26');
+appleCityRural$headlineLabel <- getHeadlineLabel(appleCityRural, startDate=appleStartDate);
 appleCityRural$region_Rest <- as.character(appleCityRural$region);
 filter <- appleCityRural$cityRural == 'smallcitiesrural' & appleCityRural$region %in% c('BC', 'Alberta', 'Ontario', 'Quebec', 'Nova Scotia');
 appleCityRural$region_Rest[filter] <- paste0('Rest of ', appleCityRural$region[filter]);
@@ -379,7 +385,7 @@ for (theProvince in levels(appleCityRural$province)) {
   setupPlot(
     ggplot(appleSubset, aes(y=value7, x=date)) +
       geom_point(aes(y=value), size=0.25, alpha=0.2) +
-      geom_ribbon(aes(ymin=valueMin, ymax=value7_pos), fill=redFill, alpha=0.1, show.legend=FALSE) +
+      geom_ribbon(aes(ymin=valueMin, ymax=pmin(value7_pos, YMAX)), fill=redFill, alpha=0.1, show.legend=FALSE) +
       geom_ribbon(aes(ymin=valueMin, ymax=value7_neg), fill=blueFill, alpha=0.1, show.legend=FALSE) +
       ggtitle(ifelse(ncats>1, titleFull, titleNarrow)) +
       geom_line() +
@@ -387,10 +393,10 @@ for (theProvince in levels(appleCityRural$province)) {
       geom_label(aes(label = headlineLabel, y = -Inf), hjust='left', vjust='bottom',
                  size=5, parse=TRUE, label.size=0, fill='#ffffff00') +
       facet_grid(rows=vars(region_Rest), cols=vars(category), switch='y'),
-    startDate = '2020/01/26',
+    startDate = appleStartDate,
     isGoogle = FALSE, isDouble=TRUE);
   ggsave(filename = paste0('../output/apple_',provinceFilename,'.png'), device = 'png', dpi='print',
-         width=ifelse(ncats==3,4,1.5), height=nregions*1.2 + 0.8 + ifelse(ncats==1, 0.15, 0), units='in', scale=1.5);
+         width=ifelse(ncats==3,4,1.5), height=nregions*1.0 + 0.7 + ifelse(ncats==1, 0.15, 0), units='in', scale=1.5);
 }
 
 
