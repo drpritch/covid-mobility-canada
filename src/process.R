@@ -2,7 +2,8 @@ library('ggplot2');
 library('forcats');
 library('tidyr');
 library('RColorBrewer');
-library('lubridate')
+library('lubridate');
+library('zoo');   # For na.approx
 
 
 # TODO: use subset and summarize throughout
@@ -25,7 +26,9 @@ regionPopulation <- c(
   Canada = 37589262,
   BC=5071336, Alberta=4371316, Ontario=14566547, Quebec=8484965, 'Nova Scotia'=971395,
   Vancouver=2691351, Edmonton=1447143, Calgary=1514723,
-  Toronto=6471850, Ottawa=1441118, Montreal=4318505, Halifax=440348);
+  # Include Oshawa CMA, exclude Hamilton. Would Apple actually be that smart? Probably not.
+  # But let's assume Oshawa mobility is similar.
+  Toronto=6471850+413936, Ottawa=1441118, Montreal=4318505, Halifax=440348);
 
 # First day of the lowest week post-covid lockdown.
 minDateRegion <- rep(as.Date('2020/03/30'), length(provinceOrder));
