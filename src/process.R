@@ -122,11 +122,11 @@ google$region <- fct_relevel(google$region, provinceOrder);
 # TODO: deal with provinces with NA data.
 google <- google[!google$region %in% c('PEI','Yukon','NWT', 'Nunavut'),];
 
-colnames(google)[6:11] <- c('retail', 'grocery', 'park', 'transit', 'work', 'res');
+colnames(google)[8:13] <- c('retail', 'grocery', 'park', 'transit', 'work', 'res');
 google$date <- as.Date(google$date);
 # Change from all categories on one row, to one row per category.
-google <- do.call('rbind', lapply(6:11, function(col) {
-  result <- google[,c(1:5)];
+google <- do.call('rbind', lapply(8:13, function(col) {
+  result <- google[,c(1:4,7)];
   result$category <- colnames(google)[col];
   result$value <- google[,col];
   result
