@@ -1,6 +1,10 @@
+library('jsonlite');
+source <- fromJSON(readLines('https://covid19-static.cdn-apple.com/covid19-mobility-data/current/v3/index.json', encoding = "UTF-8"));
 # That's... one beautiful URL, Apple.
-download.file(
-  'https://covid19-static.cdn-apple.com/covid19-mobility-data/2010HotfixDev18/v3/en-us/applemobilitytrends-2020-06-14.csv',
+#'https://covid19-static.cdn-apple.com/covid19-mobility-data/2010HotfixDev19/v3/en-us/applemobilitytrends-2020-06-15.csv',
+
+download.file(paste0(
+  'https://covid19-static.cdn-apple.com/', source$basePath, source$regions$`en-us`$csvPath),
   '../input/apple.csv');
 download.file(
   'https://www.gstatic.com/covid19/mobility/Global_Mobility_Report.csv',
