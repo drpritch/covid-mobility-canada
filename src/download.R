@@ -3,6 +3,7 @@ source <- fromJSON(readLines('https://covid19-static.cdn-apple.com/covid19-mobil
 # That's... one beautiful URL, Apple.
 #'https://covid19-static.cdn-apple.com/covid19-mobility-data/2010HotfixDev19/v3/en-us/applemobilitytrends-2020-06-15.csv',
 
+dir.create('../input');
 download.file(paste0(
   'https://covid19-static.cdn-apple.com/', source$basePath, source$regions$`en-us`$csvPath),
   '../input/apple.csv');
