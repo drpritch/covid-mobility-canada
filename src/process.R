@@ -292,7 +292,7 @@ appleStartDate <- '2020/01/26';
 # Google: 02/16 - start of actual data
 googleStartDate <- '2020/01/26';
 
-YMAX = 80;
+YMAX = 100;
 
 setupPlot <- function(p, startDate = googleStartDate, isGoogle = TRUE, isDouble=FALSE, dateSpacing = '4 weeks', regionName=NULL, palette='Set1') {
   isApple <- !isGoogle;
