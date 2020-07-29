@@ -444,7 +444,7 @@ ggsave(filename = '../output/apple_cityRural.png', device = 'png', dpi='print',
 #ggplot(appleCityRural, aes(y=value7, x=date)) + geom_line(aes(color=cityRural)) + facet_grid(row=vars(category), col=vars(region))
 
 appleCityRural_sub  <- subset(appleCityRural, category=='driving' & cityRural %in% c('bigcity','smallcitiesrural') & region != 'Canada');
-appleCityRural_sub$valueB <- round(pmax(pmin(appleCityRural_sub$value,60), -60)/4)*4
+appleCityRural_sub$valueB <- round(pmax(pmin(appleCityRural_sub$value, 80), -60)/4)*4
 
 # Sort regions by final week
 foo <- subset(appleCityRural_sub, date == max(appleCityRural$date) - 3)[,c('region_Rest','value7')];
@@ -459,7 +459,7 @@ ggplot(appleCityRural_sub,
   aes(y=as.numeric(region_Rest), x=date, fill=valueB)) +
   geom_tile(color='white', size=0.3) +
   scale_fill_gradientn(colours = c(rev(brewer.pal(7, 'RdBu')), '#ffa040', '#f0f080'),
-                        values=c((0:7)*6/72, 0.8, 1)) +
+                        values=c((0:7)/14, 0.75, 1)) +
   theme_minimal() +
   ggtitle('Driving Changes in Canada during COVID-19') +
   scale_x_date(date_breaks = '1 week', date_labels='%b %d', expand=c(0,0),
