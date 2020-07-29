@@ -122,11 +122,11 @@ google$region <- fct_relevel(google$region, provinceOrder);
 # TODO: deal with provinces with NA data.
 google <- google[!google$region %in% c('PEI','Yukon','NWT', 'Nunavut'),];
 
-colnames(google)[8:13] <- c('retail', 'grocery', 'park', 'transit', 'work', 'res');
+colnames(google)[9:14] <- c('retail', 'grocery', 'park', 'transit', 'work', 'res');
 google$date <- as.Date(google$date);
 # Change from all categories on one row, to one row per category.
-google <- do.call('rbind', lapply(8:13, function(col) {
-  result <- google[,c(1:4,7)];
+google <- do.call('rbind', lapply(9:14, function(col) {
+  result <- google[,c(1:4,8)];
   result$category <- colnames(google)[col];
   result$value <- google[,col];
   result
@@ -458,8 +458,8 @@ ggplot(appleCityRural_sub,
   # https://stackoverflow.com/questions/45361904/duplicating-and-modifying-discrete-axis-in-ggplot2
   aes(y=as.numeric(region_Rest), x=date, fill=valueB)) +
   geom_tile(color='white', size=0.3) +
-  scale_fill_gradientn(colours = c(rev(brewer.pal(7, 'RdBu')), 'red'),
-                        values=c((0:7)*6/72, 1)) +
+  scale_fill_gradientn(colours = c(rev(brewer.pal(7, 'RdBu')), '#ffa040', '#f0f080'),
+                        values=c((0:7)*6/72, 0.8, 1)) +
   theme_minimal() +
   ggtitle('Driving Changes in Canada during COVID-19') +
   scale_x_date(date_breaks = '1 week', date_labels='%b %d', expand=c(0,0),
