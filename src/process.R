@@ -110,7 +110,7 @@ getHeadlineLabel <- function(data, startDate, useTiny = TRUE) {
 # Actually: blank field = NA.
 google <- read.csv('../input/google.csv', na.strings='ZZZZZZ');
 colnames(google)[1:4] <- c('country_code', 'country', 'region', 'subregion');
-google <- google[google$country_code=='CA',];
+google <- google[google$country_code=='CA' & google$subregion == '',];
 google$region <- fct_recode(google$region,
     Canada='',
     BC='British Columbia',
@@ -292,7 +292,7 @@ appleStartDate <- '2020/01/26';
 # Google: 02/16 - start of actual data
 googleStartDate <- '2020/01/26';
 
-YMAX = 100;
+YMAX = 120;
 
 setupPlot <- function(p, startDate = googleStartDate, isGoogle = TRUE, isDouble=FALSE, dateSpacing = '4 weeks', regionName=NULL, palette='Set1') {
   isApple <- !isGoogle;
