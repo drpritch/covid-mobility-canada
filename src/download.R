@@ -8,6 +8,8 @@ download.file(paste0(
   'https://covid19-static.cdn-apple.com/', source$basePath, source$regions$`en-us`$csvPath),
   '../input/apple.csv');
 download.file(
-  'https://www.gstatic.com/covid19/mobility/Global_Mobility_Report.csv',
-  '../input/google.csv');
+  'https://www.gstatic.com/covid19/mobility/Region_Mobility_Report_CSVs.zip',
+  '../input/google.zip'
+);
+unzip('../input/google.zip', c('2020_CA_Region_Mobility_Report.csv'), exdir='../input');
 

@@ -108,7 +108,7 @@ getHeadlineLabel <- function(data, startDate, useTiny = TRUE) {
 
 
 # Actually: blank field = NA.
-google <- read.csv('../input/google.csv', na.strings='ZZZZZZ');
+google <- read.csv('../input/2020_CA_Region_Mobility_Report.csv', na.strings='ZZZZZZ');
 colnames(google)[1:4] <- c('country_code', 'country', 'region', 'subregion');
 google <- google[google$country_code=='CA' & google$subregion == '',];
 google$region <- fct_recode(google$region,
