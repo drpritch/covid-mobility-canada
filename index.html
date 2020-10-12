@@ -275,8 +275,7 @@ Description</a></li>
 <script>
   setRegion = function(regionName) {
     window.appleGraph.src = "output/apple_" + regionName + ".png";
-    window.appleGraph.style.width = (regionName == 'saskatchewan' || regionName=='manitoba' ||
-      regionName=='newbrunswick' || regionName=='newfoundland') ? '42%' : '100%';
+    window.appleGraph.style.width = (regionName=='newbrunswick' || regionName=='newfoundland') ? '72%' : '100%';
     window.googleGraph.src = "output/google_" + regionName + ".png";
   }
 
