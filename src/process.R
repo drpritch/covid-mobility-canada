@@ -399,7 +399,7 @@ for (theProvince in levels(appleCityRural$province)) {
     startDate = appleStartDate,
     isGoogle = FALSE, isDouble=TRUE);
   ggsave(filename = paste0('../output/apple_',provinceFilename,'.png'), device = 'png', dpi='print',
-         width=ifelse(ncats==3,4,1.5), height=nregions*1.0 + 0.7 + ifelse(ncats==1, 0.15, 0), units='in', scale=1.5);
+         width=0.25 + ncats*1.25, height=nregions*1.0 + 0.7 + ifelse(ncats==1, 0.15, 0), units='in', scale=1.5);
 }
 
 
