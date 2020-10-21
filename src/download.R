@@ -12,4 +12,4 @@ download.file(
   '../input/google.zip'
 );
 unzip('../input/google.zip', c('2020_CA_Region_Mobility_Report.csv'), exdir='../input');
-
+file.remove('../input/google.zip');
