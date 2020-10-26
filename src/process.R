@@ -110,7 +110,7 @@ getHeadlineLabel <- function(data, startDate, useTiny = TRUE) {
 # Actually: blank field = NA.
 google <- read.csv('../input/2020_CA_Region_Mobility_Report.csv', na.strings='ZZZZZZ');
 colnames(google)[1:4] <- c('country_code', 'country', 'region', 'subregion');
-google <- google[google$country_code=='CA' & google$subregion == '',];
+google <- google[google$country_code=='CA' & (google$subregion == '' | google$region=='Ontario'),];
 google$region <- fct_recode(google$region,
     Canada='',
     BC='British Columbia',
@@ -274,7 +274,7 @@ appleCityRural$cityRural <- fct_relevel(appleCityRural$cityRural, c('bigcity', '
 ########################################################################################
 # Plotting
 
-bimonthly <- function(x) {
+my_monthly <- function(x) {
   x_range <- range(x, na.rm = TRUE)
   
   date_range <- c(
@@ -282,8 +282,12 @@ bimonthly <- function(x) {
     lubridate::ceiling_date(x_range[2], "month")
   )
   monthly <- seq(date_range[1], date_range[2], by = "1 month")
-  
-  sort(c(monthly, monthly + days(14)))
+}
+
+bimonthly <- function(x) {
+  m <- my_monthly(x);
+
+  sort(c(m, m + days(14)))
 }
 
 # Apple: 01/26 - good for showing "baseline" / near zero period. But... poor horizontal
@@ -304,7 +308,7 @@ setupPlot <- function(p, startDate = googleStartDate, isGoogle = TRUE, isDouble=
     scale_y_continuous(breaks=seq(-100,200,by=20), minor_breaks=seq(-100,200, by=10),
                        limits=ylim,
                        name=ifelse(isGoogle, "Google Community Mobility Index", "Apple Mobility Index")) +
-    scale_x_date(breaks = bimonthly, date_labels='%b %d',
+    scale_x_date(breaks = my_monthly, date_labels='%b',
                  limits = c(as.Date(startDate), Sys.Date() - 1)) +
     geom_hline(yintercept = 0, alpha=0.5) +
     theme(axis.title.x=element_blank(), axis.text.x = element_text(angle = 90, size=ifelse(isGoogle, 8, 6)));
@@ -337,7 +341,7 @@ google$headlineLabel <- getHeadlineLabel(google, startDate=min(google$date),
       # If headline is big, made the suffix tiny                                   
       useTiny=!googleHeadlineTiny);
 for (region in levels(google$region)) {
-  regionFilter <- google$region == region;
+  regionFilter <- google$region == region & google$subregion=='';
   regionFilename <- tolower(gsub(' ','',region));
   setupPlot(
     ggplot(google[regionFilter,], aes(y=value7, x=date)) +
@@ -356,6 +360,30 @@ for (region in levels(google$region)) {
     isGoogle = TRUE, isDouble = TRUE);
   ggsave(filename = paste0('../output/google_', regionFilename, '.png'), device = 'png', dpi='print',
          width=4, height=3.0, units='in', scale=1.5);
+}
+
+for (region in levels(google$subregion)) {
+  if(region!='') {
+  regionFilter <- google$subregion == region;
+  regionFilename <- tolower(gsub(' ','',region));
+  setupPlot(
+    ggplot(google[regionFilter,], aes(y=value7, x=date)) +
+      geom_point(aes(y=value), size=0.25, alpha=0.2) +
+      geom_ribbon(data=google[regionFilter,],
+                  aes(ymin=valueMin, ymax=pmin(value7_pos, YMAX)), fill=redFill, alpha=0.1, show.legend=FALSE) +
+      geom_ribbon(data=google[regionFilter,],
+                  aes(ymin=valueMin, ymax=value7_neg), fill=blueFill, alpha=0.1, show.legend=FALSE) +
+      geom_line() +
+      geom_text(aes(label=valueLabel), size=2, nudge_y = 5, color='#555555') +
+      geom_label(aes(label = headlineLabel, y = -Inf), hjust='center', vjust='bottom',
+                 size=ifelse(googleHeadlineTiny, 3, 5), parse=TRUE, label.size=0, fill='#ffffff00') +
+      ggtitle(paste0("Mobility in ", region, " During COVID-19 (as of ", format.Date(max(google$date), "%b %d"), ")")) +
+      facet_wrap(~category, strip.position='top', labeller = labeller(category=category.labs)),
+    startDate = googleStartDate,
+    isGoogle = TRUE, isDouble = TRUE);
+  ggsave(filename = paste0('../output/google_on_', regionFilename, '.png'), device = 'png', dpi='print',
+         width=4, height=3.0, units='in', scale=1.5);
+  }
 }
 
 appleCityRural$region <- factor(appleCityRural$region);
@@ -453,24 +481,33 @@ appleCityRural_sub$region_Rest <- droplevels(
               as.character(foo$region_Rest[order(foo$value7, decreasing=T)])));
 
 regionRestLevels <- levels(appleCityRural_sub$region_Rest);
-ggplot(appleCityRural_sub,
+setupHeatmap <- function(x, startDate = '2020-03-02') {
+  x + geom_tile(color='white', size=0.3) +
+    scale_fill_gradientn(colours = c(rev(brewer.pal(7, 'RdBu')), '#ffa040', '#f0f080'),
+                         # Designed to set +10 point to right point in range (70/160 = 7/16)
+                         values=c((0:7)/16, 0.75, 1)) +
+    theme_minimal() +
+    ggtitle('Driving Changes in Canada during COVID-19') +
+    scale_x_date(date_breaks = '1 week', date_labels='%b %d', expand=c(0,0),
+                 limits = c(as.Date(startDate), Sys.Date())) +
+    scale_y_continuous(breaks = 1:length(regionRestLevels), labels=regionRestLevels, 
+                       sec.axis = sec_axis(~., breaks=1:length(regionRestLevels), labels=regionRestLevels)) +
+    theme(axis.title.x=element_blank(), axis.text.x = element_text(angle = 90, size = 8),
+          axis.title.y=element_blank()) +
+    labs(fill='Change', caption='Source: Apple Mobility Report, rebaselined and with small city/rural estimates. drpritch.github.io/covid-mobility-canada')
+}
+setupHeatmap(ggplot(appleCityRural_sub,
   # as.numeric + scale_y_continuous: horrible hack to enable repeated y axis labels on right side, as per
   # https://stackoverflow.com/questions/45361904/duplicating-and-modifying-discrete-axis-in-ggplot2
-  aes(y=as.numeric(region_Rest), x=date, fill=valueB)) +
-  geom_tile(color='white', size=0.3) +
-  scale_fill_gradientn(colours = c(rev(brewer.pal(7, 'RdBu')), '#ffa040', '#f0f080'),
-                       # Designed to set +10 point to right point in range (70/160 = 7/16)
-                        values=c((0:7)/16, 0.75, 1)) +
-  theme_minimal() +
-  ggtitle('Driving Changes in Canada during COVID-19') +
-  scale_x_date(date_breaks = '1 week', date_labels='%b %d', expand=c(0,0),
-               limits = c(as.Date('2020-03-02'), Sys.Date())) +
-  scale_y_continuous(breaks = 1:length(regionRestLevels), labels=regionRestLevels, 
-                     sec.axis = sec_axis(~., breaks=1:length(regionRestLevels), labels=regionRestLevels)) +
-  theme(axis.title.x=element_blank(), axis.text.x = element_text(angle = 90, size = 8),
-        axis.title.y=element_blank()) +
-  labs(fill='Change', caption='Source: Apple Mobility Report, rebaselined and with small city/rural estimates. drpritch.github.io/covid-mobility-canada')
+  aes(y=as.numeric(region_Rest), x=date, fill=valueB)));
 ggsave(filename = '../output/apple_heatmap.png', device = 'png', dpi='print',
        width=8, height=2, units='in', scale=1.5);
+setupHeatmap(ggplot(appleCityRural_sub,
+                    # as.numeric + scale_y_continuous: horrible hack to enable repeated y axis labels on right side, as per
+                    # https://stackoverflow.com/questions/45361904/duplicating-and-modifying-discrete-axis-in-ggplot2
+                    aes(y=as.numeric(region_Rest), x=date, fill=valueB)),
+             '2020-09-01');
+ggsave(filename = '../output/apple_heatmap_wave2.png', device = 'png', dpi='print',
+       width=5, height=2, units='in', scale=1.5);
 
 
