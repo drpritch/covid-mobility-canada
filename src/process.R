@@ -161,6 +161,7 @@ apple$province[apple$region %in% c('Toronto', 'Ottawa')] <- 'Ontario';
 apple$province[apple$region == 'Montreal'] <- 'Quebec';
 apple$province[apple$region == 'Halifax'] <- 'Nova Scotia';
 colnames(apple)[3] <- 'category'; # mode, really
+apple$category <- factor(apple$category);
 
 apple <- droplevels(apple);
 weekdayList <- c('Sun','Mon','Tue','Wed','Thu','Fri','Sat');
