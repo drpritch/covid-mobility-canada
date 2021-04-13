@@ -11,5 +11,7 @@ download.file(
   'https://www.gstatic.com/covid19/mobility/Region_Mobility_Report_CSVs.zip',
   '../input/google.zip'
 );
-unzip('../input/google.zip', c('2020_CA_Region_Mobility_Report.csv'), exdir='../input');
+unzip('../input/google.zip',
+      c('2020_CA_Region_Mobility_Report.csv',
+        '2021_CA_Region_Mobility_Report.csv'), exdir='../input');
 file.remove('../input/google.zip');

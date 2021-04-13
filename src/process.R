@@ -108,7 +108,10 @@ getHeadlineLabel <- function(data, startDate, useTiny = TRUE) {
 
 
 # Actually: blank field = NA.
-google <- read.csv('../input/2020_CA_Region_Mobility_Report.csv', na.strings='ZZZZZZ');
+google <- rbind(
+  read.csv('../input/2020_CA_Region_Mobility_Report.csv', na.strings='ZZZZZZ'),
+  read.csv('../input/2021_CA_Region_Mobility_Report.csv', na.strings='ZZZZZZ')
+);
 colnames(google)[1:4] <- c('country_code', 'country', 'region', 'subregion');
 google <- google[google$country_code=='CA' & (google$subregion == '' | google$region=='Ontario'),];
 google$region <- fct_recode(google$region,
@@ -119,14 +122,15 @@ google$region <- fct_recode(google$region,
     NWT='Northwest Territories'
 );
 google$region <- fct_relevel(google$region, provinceOrder);
+google$subregion <- factor(google$subregion);
 # TODO: deal with provinces with NA data.
 google <- google[!google$region %in% c('PEI','Yukon','NWT', 'Nunavut'),];
 
-colnames(google)[9:14] <- c('retail', 'grocery', 'park', 'transit', 'work', 'res');
+colnames(google)[10:15] <- c('retail', 'grocery', 'park', 'transit', 'work', 'res');
 google$date <- as.Date(google$date);
 # Change from all categories on one row, to one row per category.
-google <- do.call('rbind', lapply(9:14, function(col) {
-  result <- google[,c(1:4,8)];
+google <- do.call('rbind', lapply(10:15, function(col) {
+  result <- google[,c(1:4,9)];
   result$category <- colnames(google)[col];
   result$value <- google[,col];
   result
